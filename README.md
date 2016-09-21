@@ -17,7 +17,7 @@ Configuration sample:
 "accessories": [
 	{
               "accessory": "Script",
-              "name": "iTunes Music",
+              "name": "Alarm of bike",
               "on": "~/on.sh",
               "off": "~/off.sh",
               "state": "~/state.sh",
