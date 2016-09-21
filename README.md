@@ -5,8 +5,9 @@ Run custom script on the HomeBridge platform.
 
 ## Installation
 
-1. Install homebridge using: `npm install -g homebridge`
-2. Install this plugin using: `npm install -g homebridge-script`
+1. Install homebridge using: `sudo npm install -g homebridge`
+2. Install module: `sudo npm install -g file-exists`
+2. Install this plugin using: `sudo npm install -g homebridge-script`
 3. Update your configuration file. See `sample-config.json` in this repository for a sample.
 4. Copy scripts (*.sh) files to own directory.
 
@@ -30,5 +31,5 @@ Configuration sample:
 ]
 ```
 
-![alt text](screen1.png "homekit")
-![alt text](screen2.png "homebridge")
+![homekit](screen1.png "homekit")
+![homebridge](screen2.png "homebridge")
