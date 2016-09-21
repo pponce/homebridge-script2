@@ -1,7 +1,7 @@
-homebridge-ssh
+homebridge-script
 ==============
 
-Supports triggering ssh commands on the HomeBridge platform.
+Run custom script on the HomeBridge platform.
 
 ## Installation
 
