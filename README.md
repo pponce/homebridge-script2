@@ -29,3 +29,5 @@ Configuration sample:
 	}
 ]
 ```
+
+![alt text](screen1.png "Description goes here")
