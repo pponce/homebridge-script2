@@ -40,8 +40,7 @@
     "url": "https://github.com/xxcombat/homebridge-script/issues"
   },
   "dependencies": {
-    "object-assign": "^4.0.1",
-    "script-exec": "^1.3.0"
+    "object-assign": "^4.0.1"
   },
   "description": "script plugin for homebridge: https://github.com/nfarina/homebridge",
   "devDependencies": {},
