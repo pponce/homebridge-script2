@@ -15,6 +15,7 @@
       "on": "sh ~/on.sh",
       "off": "sh ~/off.sh",
       "state": "sh ~/state.sh",
+      "fileState": "/Users/olegmalovichko/script.flag",
       "on_value" : "true",
       "exact_match": true
       }

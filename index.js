@@ -25,6 +25,7 @@ function scriptAccessory(log, config) {
   this.offCommand = config['off'];
   this.stateCommand = config['state'];
   this.onValue = config['on_value'];
+  this.fileState = config['fileState'];
   this.onValue = this.onValue.trim().toLowerCase();
   this.exactMatch = config['exact_match'] || true;
 }
@@ -52,9 +53,9 @@ scriptAccessory.prototype.setState = function(powerOn, callback) {
 scriptAccessory.prototype.getState = function(callback) {
   var accessory = this;
   var command = accessory['stateCommand'];
-    exec(command, puts);
-    accessory.log('State of ' + accessory.name + ' is: ' + command);
-    callback(null, true);
+  var flagFile = fileExists(this.fileState);
+    accessory.log('State of ' + accessory.name + ' is: ' + flagFile)
+    callback(null, flagFile);
 }
 
 scriptAccessory.prototype.getServices = function() {

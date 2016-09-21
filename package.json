@@ -3,19 +3,27 @@
     [
       "homebridge-script",
       ""
+    ],
+    [
+      "homebridge-script",
+      ""
     ]
   ],
   "_from": "homebridge-script@latest",
-  "_id": "homebridge-script@0.0.1",
+  "_id": "homebridge-script@0.0.6",
   "_inCache": true,
   "_installable": true,
   "_location": "/homebridge-script",
-  "_nodeVersion": "5.1.0",
+  "_nodeVersion": "5.10.1",
+  "_npmOperationalInternal": {
+    "host": "packages-16-east.internal.npmjs.com",
+    "tmp": "tmp/homebridge-script-0.0.4.tgz_1474476772449_0.6579721719026566"
+  },
   "_npmUser": {
     "email": "cs.group.com@gmail.com",
-    "name": "Oleg Malovichko"
+    "name": "xxcombat"
   },
-  "_npmVersion": "2.14.12",
+  "_npmVersion": "3.8.3",
   "_phantomChildren": {},
   "_requested": {
     "name": "homebridge-script",
@@ -28,8 +36,6 @@
   "_requiredBy": [
     "#USER"
   ],
-  "_resolved": "https://registry.npmjs.org/homebridge-script/-/homebridge-script-0.0.6.tgz",
-  "_shasum": "5804a1eef24943c2310318bbe4a1e27abf61565a",
   "_shrinkwrap": null,
   "_spec": "homebridge-script",
   "_where": "",
@@ -46,8 +52,8 @@
   "devDependencies": {},
   "directories": {},
   "dist": {
-    "shasum": "5804a1eef24943c2310318bbe4a1e27abf61565a",
-    "tarball": "https://registry.npmjs.org/homebridge-script/-/homebridge-script-0.0.6.tgz"
+    "shasum": "667868292bc787a34d73c864c16718e5ddcb099f",
+    "tarball": "https://registry.npmjs.org/homebridge-script/-/homebridge-script-0.0.4.tgz"
   },
   "engines": {
     "homebridge": ">=0.2.0",
@@ -62,7 +68,7 @@
   "maintainers": [
     {
       "email": "cs.group.com@gmail.com",
-      "name": "Oleg Malovichko"
+      "name": "xxcombat"
     }
   ],
   "name": "homebridge-script",
@@ -73,5 +79,5 @@
     "url": "git://github.com/xxcombat/homebridge-script.git"
   },
   "scripts": {},
-  "version": "0.0.1"
+  "version": "0.0.6"
 }
