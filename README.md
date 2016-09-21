@@ -30,4 +30,5 @@ Configuration sample:
 ]
 ```
 
-![alt text](screen1.png "Description goes here")
+![alt text](screen1.png "homekit")
+![alt text](screen2.png "homebridge")
