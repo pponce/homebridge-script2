@@ -1,0 +1,22 @@
+{
+  "bridge": {
+    "name": "Homebridge",
+    "username": "CD:22:3D:E3:CE:30",
+    "port": 51826,
+    "pin": "031-45-154"
+  },
+
+  "description": "This is an example configuration for the Script homebridge plugin",
+
+  "accessories": [
+        {
+      "accessory": "Script",
+      "name": "Script for running",
+      "on": "sh ~/on.sh",
+      "off": "sh ~/off.sh",
+      "state": "sh ~/state.sh",
+      "on_value" : "true",
+      "exact_match": true
+      }
+  ]
+}
