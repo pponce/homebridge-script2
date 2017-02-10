@@ -4,7 +4,7 @@ var Characteristic;
 var sys = require('sys');
     exec = require('child_process').exec;
     assign = require('object-assign');
-    const fileExists = require('file-exists');
+    fileExists = require('file-exists');
 
 module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
@@ -53,7 +53,7 @@ scriptAccessory.prototype.setState = function(powerOn, callback) {
 scriptAccessory.prototype.getState = function(callback) {
   var accessory = this;
   var command = accessory['stateCommand'];
-  var flagFile = fileExists(this.fileState);
+  var flagFile = fileExists.sync(this.fileState);
     accessory.log('State of ' + accessory.name + ' is: ' + flagFile)
     callback(null, flagFile);
 }
