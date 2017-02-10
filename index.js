@@ -4,7 +4,7 @@ var Characteristic;
 var sys = require('sys');
     exec = require('child_process').exec;
     assign = require('object-assign');
-    fileExists = require('file-exists');
+    const fileExists = require('file-exists');
 
 module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
