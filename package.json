@@ -1,83 +1,20 @@
 {
-  "_args": [
-    [
-      "homebridge-script",
-      ""
-    ],
-    [
-      "homebridge-script",
-      ""
-    ]
-  ],
-  "_from": "homebridge-script@latest",
-  "_id": "homebridge-script@0.0.6",
-  "_inCache": true,
-  "_installable": true,
-  "_location": "/homebridge-script",
-  "_nodeVersion": "5.10.1",
-  "_npmOperationalInternal": {
-    "host": "packages-16-east.internal.npmjs.com",
-    "tmp": "tmp/homebridge-script-0.0.4.tgz_1474476772449_0.6579721719026566"
-  },
-  "_npmUser": {
-    "email": "cs.group.com@gmail.com",
-    "name": "xxcombat"
-  },
-  "_npmVersion": "3.8.3",
-  "_phantomChildren": {},
-  "_requested": {
-    "name": "homebridge-script",
-    "raw": "homebridge-script",
-    "rawSpec": "",
-    "scope": null,
-    "spec": "latest",
-    "type": "tag"
-  },
-  "_requiredBy": [
-    "#USER"
-  ],
-  "_shrinkwrap": null,
-  "_spec": "homebridge-script",
-  "_where": "",
-  "author": {
-    "name": "Oleg Malovichko"
-  },
-  "bugs": {
-    "url": "https://github.com/xxcombat/homebridge-script/issues"
-  },
-  "dependencies": {
-    "object-assign": "^4.0.1"
-  },
+  "name": "homebridge-script",
+  "version": "0.0.7",
+  "license": "MIT",
   "description": "script plugin for homebridge: https://github.com/nfarina/homebridge",
-  "devDependencies": {},
-  "directories": {},
-  "dist": {
-    "shasum": "667868292bc787a34d73c864c16718e5ddcb099f",
-    "tarball": "https://registry.npmjs.org/homebridge-script/-/homebridge-script-0.0.4.tgz"
+  "keywords": [
+    "homebridge-plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/xxcombat/homebridge-script.git"
   },
   "engines": {
     "homebridge": ">=0.2.0",
     "node": ">=0.12.0"
   },
-  "gitHead": "8d9a2bb297a0370296111e96ac65d4d393c2122c",
-  "homepage": "https://github.com/zb0th/homebridge-script#readme",
-  "keywords": [
-    "homebridge-plugin"
-  ],
-  "license": "MIT",
-  "maintainers": [
-    {
-      "email": "cs.group.com@gmail.com",
-      "name": "xxcombat"
-    }
-  ],
-  "name": "homebridge-script",
-  "optionalDependencies": {},
-  "readme": "ERROR: No README data found!",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/xxcombat/homebridge-script.git"
-  },
-  "scripts": {},
-  "version": "0.0.7"
+  "dependencies": {
+    "object-assign": "^4.0.1"
+  }
 }
