@@ -39,6 +39,3 @@ Configuration sample:
 - The state.sh script executes when your homekit app checks for current state.
 - The configured fileState file is used as a flag. When the homekit app checks for current state it checks for the existance of this file. If it exists, current state is on. If it does not exist, current state is off.
 
-
-![homekit](screen1.png "homekit")
-![homebridge](screen2.png "homebridge")
