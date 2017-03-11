@@ -33,11 +33,11 @@ Configuration sample:
 ]
 ```
 ## Notes
-Using the above configuration as an example:
--The on.sh script executes when turn on the accessory via a homekit app. (insure the on.sh script creates the configured fileState file)
--The off.sh script executes when you turn off the accessory via a homekt app. (insure the off.sh script removes the configured fileState file)
--The state.sh script executes when your homekit app checks for current state.
--The configured fileState file is used as a flag. When the homekit app checks for current state it checks for the existance of this file. If it exists, current state is on. If it does not exist, current state is off.
+### Using the above configuration as an example:
+- The on.sh script executes when turn on the accessory via a homekit app. (insure the on.sh script creates the configured fileState file)
+- The off.sh sc ript executes when you turn off the accessory via a homekt app. (insure the off.sh script removes the configured fileState file)
+- The state.sh script executes when your homekit app checks for current state.
+- The configured fileState file is used as a flag. When the homekit app checks for current state it checks for the existance of this file. If it exists, current state is on. If it does not exist, current state is off.
 
 
 ![homekit](screen1.png "homekit")
