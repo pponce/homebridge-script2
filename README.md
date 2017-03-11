@@ -45,7 +45,7 @@ Name | Value | Notes
 ```
 #### Notes
 ##### Using the above configuration as an example:
-- The on.sh script executes when turn on the accessory via a homekit app. (In this case we are the using existance of a file to determine on or off current state, so you must insure the on.sh script creates the configured fileState file.
+- The on.sh script executes when you turn on the accessory via a homekit app. (In this case we are the using existance of a file to determine on or off current state, so you must insure the on.sh script creates the configured fileState file.
 - The off.sh script executes when you turn off the accessory via a homekt app. ( In this case we are using existance of a file to determine on or off current state, insure the off.sh script deletes the configured fileState file.)
 - The state.sh script in this case would not execute as fileState parameter overrides its use.
 - The configured fileState file is used as a flag. When the homekit app checks for current state it checks for the existance of this file. If it exists, current state is on. If it does not exist, current state is off.
@@ -67,7 +67,7 @@ Name | Value | Notes
 ```
 #### Notes
 ##### Using the above configuration as an example:
-- The on.sh script executes when turn on the accessory via a homekit app. (In this case we are executing a state script to determine on or off current state.)
+- The on.sh script executes when you turn on the accessory via a homekit app. (In this case we are executing a state script to determine on or off current state.)
 - The off.sh script executes when you turn off the accessory via a homekt app. ( In this case we are executing a state script to determine on or off current state.)
 - The state.sh script in this case would be executed to check current state.  Insure that this script outputs to stdout the matching on value as configured by the on_value config parameter. If the on_value matches the on value output of this script then the accessory will be determined to be on.
 - The configured fileState file is not used in this example. Because it was not configured the state script is being used.
