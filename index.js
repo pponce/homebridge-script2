@@ -25,12 +25,13 @@ function scriptAccessory(log, config) {
   this.offCommand = config['off'];
   this.stateCommand = config['state'];
   this.onValue = config['on_value'];
-  this.fileState = config['fileState'];
+  this.fileState = config['fileState'] || false;
   this.onValue = this.onValue.trim().toLowerCase();
-  this.exactMatch = config['exact_match'] || true;
+  //this.exactMatch = config['exact_match'] || true;
 }
 
-scriptAccessory.prototype.matchesString = function(match) {
+/* 
+  scriptAccessory.prototype.matchesString = function(match) {
   if(this.exactMatch) {
     return (match === this.onValue);
   }
@@ -38,7 +39,7 @@ scriptAccessory.prototype.matchesString = function(match) {
     return (match.indexOf(this.onValue) > -1);
   }
 }
-
+*/
 scriptAccessory.prototype.setState = function(powerOn, callback) {
   var accessory = this;
   var state = powerOn ? 'on' : 'off';
@@ -53,13 +54,19 @@ scriptAccessory.prototype.setState = function(powerOn, callback) {
 scriptAccessory.prototype.getState = function(callback) {
   var accessory = this;
   var command = accessory['stateCommand'];
-    
-    exec(command, puts);
+  var stdout = "none";  
   
-  var flagFile = fileExists.sync(this.fileState);
-    
+  if (this.fileState) {
+    var flagFile = fileExists.sync(this.fileState);
     accessory.log('State of ' + accessory.name + ' is: ' + flagFile)
     callback(null, flagFile);
+  }
+  else {
+    exec(command, function (error, stdout, stderr) {
+      var cleanOut=stdout.trim().toLowerCase();
+      accessory.log('State of ' + accessory.name + ' is: ' + cleanOut);
+      callback(null, cleanOut == accessory.onValue);
+    });
 }
 
 scriptAccessory.prototype.getServices = function() {
@@ -74,7 +81,7 @@ scriptAccessory.prototype.getServices = function() {
   var characteristic = switchService.getCharacteristic(Characteristic.On)
   .on('set', this.setState.bind(this));
 
-  if (this.stateCommand) {
+  if (this.stateCommand || this.fileState) {
     characteristic.on('get', this.getState.bind(this))
   };
 
