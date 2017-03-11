@@ -13,7 +13,7 @@ module.exports = function(homebridge) {
 }
 
 function puts(error, stdout, stderr) {
-   sys.puts(stdout)
+   console.log(stdout)
 }
 
 function scriptAccessory(log, config) {
