@@ -1,7 +1,7 @@
 homebridge-script
 ==============
 
-Run custom scripts on the HomeBridge platform.
+Execute custom scripts via homekit apps.
 Based on the work done by https://github.com/xxcombat
 Original plugin https://github.com/xxcombat/homebridge-script
 
