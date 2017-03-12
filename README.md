@@ -2,10 +2,11 @@ homebridge-script
 ==============
 
 Execute custom scripts via homekit apps.
-Based on the work done by https://github.com/xxcombat
-Original plugin https://github.com/xxcombat/homebridge-script
+Core of the code written by https://github.com/xxcombat.
+Original plugin https://github.com/xxcombat/homebridge-script.
+I've updated it to allow for executing a state script or work by checking for the existance of a file.
+This fork depends on file-exists however there is no need to install it seperately for this fork.
 
-This fork depends on file-exists (no need to install it seperately) and can work with either a file flag or state script to determin current on/off state.
 
 ## Installation
 
