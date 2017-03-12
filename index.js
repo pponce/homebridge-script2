@@ -67,6 +67,7 @@ scriptAccessory.prototype.getState = function(callback) {
       accessory.log('State of ' + accessory.name + ' is: ' + cleanOut);
       callback(null, cleanOut == accessory.onValue);
     });
+  }
 }
 
 scriptAccessory.prototype.getServices = function() {
