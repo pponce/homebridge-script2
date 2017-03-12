@@ -37,11 +37,11 @@ Name | Value | Notes
 "accessories": [
 	{
               "accessory": "Script",
-              "name": "Alarm of bike",
-              "on": "~/on.sh",
-              "off": "~/off.sh",
-              "state": "~/state.sh",
-              "fileState": "/Users/olegmalovichko/script.flag",
+              "name": "RPC3 Socket 1",
+              "on": "/var/homebridge/rpc3control/on.sh 1",
+              "off": "/var/homebridge/rpc3control/off.sh 1",
+              "state": "/var/homebridge/rpc3control/state.sh 1",
+              "fileState": "/var/homebridge/rpc3control/script1.flag",
               "on_value" : "true",
               }
 	}
