@@ -58,7 +58,7 @@ scriptAccessory.prototype.getState = function(callback) {
   
   if (this.fileState) {
     var flagFile = fileExists.sync(this.fileState);
-    accessory.log('State of ' + accessory.name + ' is: ' + flagFile)
+    accessory.log('State of ' + accessory.name + ' is: ' + flagFile);
     callback(null, flagFile);
   }
   else {
