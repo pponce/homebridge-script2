@@ -2,7 +2,7 @@ homebridge-script
 ==============
 
 Run custom scripts on the HomeBridge platform.
-Based on the work done by XXCOMBAT
+Based on the work done by @xxcombat
 Original plugin https://github.com/xxcombat/homebridge-script
 
 This fork Works with latest file-exists and can work with a file flag or state script to determin current on/off state.
