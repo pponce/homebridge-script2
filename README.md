@@ -10,8 +10,7 @@ This fork Works with latest file-exists and can work with a file flag or state s
 ## Installation
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install module: `npm install -g file-exists`
-2. Install this plugin using: `npm install -g homebridge-script`
+2. Install this plugin using: `npm install -g pponce/homebridge-script`
 3. Update your configuration file. See `sample-config.json` in this repository for a sample.
 4. Copy scripts (*.sh) files to own directory.
 
