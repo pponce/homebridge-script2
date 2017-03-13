@@ -9,14 +9,14 @@ var sys = require('sys');
 module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
-  homebridge.registerAccessory('homebridge-script', 'Script', scriptAccessory);
+  homebridge.registerAccessory('homebridge-script2', 'Script2', script2Accessory);
 }
 
 function puts(error, stdout, stderr) {
    console.log(stdout)
 }
 
-function scriptAccessory(log, config) {
+function script2Accessory(log, config) {
   this.log = log;
   this.service = 'Switch';
 
@@ -31,7 +31,7 @@ function scriptAccessory(log, config) {
 }
 
 /* 
-  scriptAccessory.prototype.matchesString = function(match) {
+  script2Accessory.prototype.matchesString = function(match) {
   if(this.exactMatch) {
     return (match === this.onValue);
   }
@@ -40,7 +40,8 @@ function scriptAccessory(log, config) {
   }
 }
 */
-scriptAccessory.prototype.setState = function(powerOn, callback) {
+
+script2Accessory.prototype.setState = function(powerOn, callback) {
   var accessory = this;
   var state = powerOn ? 'on' : 'off';
   var prop = state + 'Command';
@@ -51,7 +52,7 @@ scriptAccessory.prototype.setState = function(powerOn, callback) {
     callback(null);
 }
 
-scriptAccessory.prototype.getState = function(callback) {
+script2Accessory.prototype.getState = function(callback) {
   var accessory = this;
   var command = accessory['stateCommand'];
   var stdout = "none";  
@@ -70,14 +71,14 @@ scriptAccessory.prototype.getState = function(callback) {
   }
 }
 
-scriptAccessory.prototype.getServices = function() {
+script2Accessory.prototype.getServices = function() {
   var informationService = new Service.AccessoryInformation();
   var switchService = new Service.Switch(this.name);
 
   informationService
-  .setCharacteristic(Characteristic.Manufacturer, 'script Manufacturer')
-  .setCharacteristic(Characteristic.Model, 'script Model')
-  .setCharacteristic(Characteristic.SerialNumber, 'script Serial Number');
+  .setCharacteristic(Characteristic.Manufacturer, 'script2 Manufacturer')
+  .setCharacteristic(Characteristic.Model, 'script2 Model')
+  .setCharacteristic(Characteristic.SerialNumber, 'script2 Serial Number');
 
   var characteristic = switchService.getCharacteristic(Characteristic.On)
   .on('set', this.setState.bind(this));
