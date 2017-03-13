@@ -2,16 +2,18 @@ homebridge-script
 ==============
 
 Execute custom scripts via homekit apps.
-Core of the code written by https://github.com/xxcombat.
+
+Core of the code written by @xxcombat. Great plugin that has served me well.
 Original plugin https://github.com/xxcombat/homebridge-script.
-I've updated it to allow for executing a state script or work by checking for the existance of a file.
-This fork depends on file-exists however there is no need to install it seperately for this fork.
+
+It appears that the original homebridge-script plugin has stopped being maintained and supported. PR's are also not being accepted. I've updated it to allow for executing a state script or work by checking for the existance of a file. Thanks to @ybizeul for the code snipet that allows for state.sh to execute. This plugin also works with the latest file-exists that broke the original plugin.
+While this fork depends on file-exists there is no need to install it seperately for this fork as i've included it as a dependency.
 
 
 ## Installation
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install this plugin using: `npm install -g pponce/homebridge-script`
+2. Install this plugin using: `npm install -g homebridge-script2`
 3. Update your configuration file. See examples below that show the plugin working by using filestate for current state check as well as an example using state.sh script for current state check.
 4. Copy scripts (*.sh) files to own directory.
 
@@ -21,7 +23,7 @@ Homebridge-script configuration parameters
 
 Name | Value | Required | Notes
 ----------- | ------- | --------- | --------------
-`accessory` | "Script" | yes | Must be set to "Script" and is required
+`accessory` | "Script2" | yes | Must be set to "Script" and is required
 `name` | _(custom)_ | yes | Name of accessory that will appear in homekit app and is required
 `on` | _(custom)_ | yes | Location of script to execute the on action and is required
 `off` | _(custom)_ | yes | Location of script to execute the off action and is required
@@ -36,7 +38,7 @@ Name | Value | Required | Notes
 ```
 "accessories": [
 	{
-              "accessory": "Script",
+              "accessory": "Script2",
               "name": "RPC3 Socket 1",
               "on": "/var/homebridge/rpc3control/on.sh 1",
               "off": "/var/homebridge/rpc3control/off.sh 1",
@@ -59,7 +61,7 @@ Name | Value | Required | Notes
 ```
 "accessories": [
 	{
-              "accessory": "Script",
+              "accessory": "Script2",
               "name": "Alarm of bike",
               "on": "~/on.sh",
               "off": "~/off.sh",
