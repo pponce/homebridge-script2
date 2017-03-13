@@ -12,7 +12,7 @@ This fork depends on file-exists however there is no need to install it seperate
 
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g pponce/homebridge-script`
-3. Update your configuration file. See `sample-config.json` in this repository for a sample.
+3. Update your configuration file. See examples below that show the plugin working by using filestate for current state check as well as an example using state.sh script for current state check.
 4. Copy scripts (*.sh) files to own directory.
 
 For autostart homebridge with OSX copy com.homebridge.startup.plist to /Library/LaunchDaemons
@@ -31,7 +31,7 @@ Name | Value | Required | Notes
 
 ## Configuration
 
-### Configuration example 1:
+### Configuration example 1, using filestate for current state check:
 
 ```
 "accessories": [
@@ -55,7 +55,7 @@ Name | Value | Required | Notes
 - The configured fileState file is used as a flag. When the homekit app checks for current state it checks for the existence of this file. If it exists, current state is on. If it does not exist, current state is off.
 - The on_value in this case is not being used as it is only used when the state script is used to check for current state.
 
-### Configuration example 2:
+### Configuration example 2, executing state.sh script for current state check:
 ```
 "accessories": [
 	{
