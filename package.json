@@ -1,14 +1,15 @@
 {
-  "name": "homebridge-script",
-  "version": "0.0.8",
+  "name": "homebridge-script2",
+  "version": "0.0.9",
   "license": "MIT",
   "description": "script plugin for homebridge: https://github.com/nfarina/homebridge",
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "homebridge-script2"
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/xxcombat/homebridge-script.git"
+    "url": "git://github.com/pponce/homebridge-script2.git"
   },
   "engines": {
     "homebridge": ">=0.2.0",
