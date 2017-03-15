@@ -13,7 +13,7 @@ While this fork depends on file-exists there is no need to install it seperately
 ## Installation
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install this plugin using: `npm install -g pponce/homebridge-script2`
+2. Install this plugin using: `npm install -g homebridge-script2`
 3. Update your configuration file. See examples below that show the plugin working by using filestate for current state check as well as an example using state.sh script for current state check.
 4. Copy scripts (*.sh) files to own directory.
 
