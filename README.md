@@ -44,8 +44,7 @@ Name | Value | Required | Notes
               "off": "/var/homebridge/rpc3control/off.sh 1",
               "state": "/var/homebridge/rpc3control/state.sh 1",
               "fileState": "/var/homebridge/rpc3control/script1.flag",
-              "on_value" : "true",
-              }
+              "on_value" : "true"
 	}
 ]
 ```
@@ -66,8 +65,7 @@ Name | Value | Required | Notes
               "on": "~/on.sh",
               "off": "~/off.sh",
               "state": "~/state.sh",
-              "on_value" : "true",
-              }
+              "on_value" : "true"
 	}
 ]
 ```
