@@ -11,6 +11,7 @@ While this fork depends on file-exists there is no need to install it seperately
 
 
 ## Installation
+(Requires node >=6.0.0)
 
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-script2`
