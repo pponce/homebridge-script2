@@ -80,27 +80,26 @@ script2Accessory.prototype.getServices = function() {
   .setCharacteristic(Characteristic.Model, 'script2 Model')
   .setCharacteristic(Characteristic.SerialNumber, 'script2 Serial Number');  
   
-  if (this.serviceType == "switch") {
-  var switchService = new Service.Switch(this.name);
-  switchService
-  .getCharacteristic(Characteristic.On)
-  .on('set', this.setState.bind(this));
-  }
-  else {
-      var lockService = new Service.LockMechanism(this.name);
-      lockService
-      .getCharacteristic(Characteristic.LockCurrentState)
-      .on('get', this.getState.bind(this));
-      
-      lockService
-      .getCharacteristic(Characteristic.LockTargetState)
-      .on('get', this.getState.bind(this))
-      .on('set', this.setState.bind(this));
-  }
-
   if (this.stateCommand || this.fileState) {
-    if (switchService) { switchService.on('get', this.getState.bind(this)) }
-  };
+    if (this.serviceType == "switch") {
+        var switchService = new Service.Switch(this.name);
+        switchService
+        .getCharacteristic(Characteristic.On)
+        .on('get', this.getState.bind(this))
+        .on('set', this.setState.bind(this));
+    }
+    else {
+        var lockService = new Service.LockMechanism(this.name);
+        lockService
+        .getCharacteristic(Characteristic.LockCurrentState)
+        .on('get', this.getState.bind(this));
+       
+        lockService
+        .getCharacteristic(Characteristic.LockTargetState)
+        .on('get', this.getState.bind(this))
+        .on('set', this.setState.bind(this));
+    }
+}
 
   if (switchService) {return [switchService];}
   if (lockService) {return [lockService];}  
