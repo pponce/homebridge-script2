@@ -60,6 +60,9 @@ script2Accessory.prototype.getState = function(callback) {
   
   if (this.fileState) {
     var flagFile = fileExists.sync(this.fileState);
+    if (this.serviceType == "lock") {
+        flagFile = (flagFile == true) ? Characteristic.LockCurrentState.SECURED : Characteristic.LockCurrentState.UNSECURED;
+    }
     accessory.log('State of ' + accessory.name + ' is: ' + flagFile);
     callback(null, flagFile);
   }
@@ -67,7 +70,13 @@ script2Accessory.prototype.getState = function(callback) {
     exec(command, function (error, stdout, stderr) {
       var cleanOut=stdout.trim().toLowerCase();
       accessory.log('State of ' + accessory.name + ' is: ' + cleanOut);
-      callback(null, cleanOut == accessory.onValue);
+      if (this.serviceType == "lock"){
+          cleanOut = (cleanOut == accessory.onValue) ? Characteristic.LockCurrentState.SECURED : Characteristic.LockCurrentState.UNSECURED;
+      }
+      If (this.serviceType == "switch") {
+          cleanOut = (cleanOut == accessory.onValue) ? true : false;
+      }
+      callback(null, cleanOut);
     });
   }
 }
