@@ -16,7 +16,7 @@ While this fork depends on file-exists there is no need to install it seperately
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-script2`
 3. Update your configuration file. See examples below that show the plugin working by using filestate for current state check as well as an example using state.sh script for current state check.
-4. Copy scripts (*.sh) files to own directory.
+4. Make sure scripts have been made executable (chmod +x scriptname.sh) and Copy scripts (*.sh) files to own directory.
 
 For autostart homebridge with OSX copy com.homebridge.startup.plist to /Library/LaunchDaemons
 
@@ -76,5 +76,5 @@ Name | Value | Required | Notes
 - The off.sh script executes when you turn off the accessory via a homekit app. ( In this case we are executing a state script to determine on or off current state.)
 - The state.sh script in this case would be executed to check current state.  Insure that this script outputs to stdout the matching on value as configured by the on_value config parameter. If the on_value matches the on value output of this script then the accessory will be determined to be on.
 - The configured fileState file is not used in this example. Because it was not configured the state script is being used.
-- The on_value in this case is used to match against the state script output. If the value matches the output of the state script the accessory is determined to be on.
+- The on_value in this case is used to match against the state script output. If the value matches the output of the state script, the accessory is determined to be on.
 
