@@ -16,7 +16,7 @@ While this fork depends on file-exists there is no need to install it seperately
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-script2`
 3. Update your configuration file. See examples below that show the plugin working by using filestate for current state check as well as an example using state.sh script for current state check.
-4. Make sure scripts have been made executable (chmod +x scriptname.sh) and Copy scripts (*.sh) files to own directory.
+4. Make sure scripts have been made executable (chmod +x scriptname.sh) and also accessible by the homebridge user. 
 
 For autostart homebridge with OSX copy com.homebridge.startup.plist to /Library/LaunchDaemons
 
