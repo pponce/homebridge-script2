@@ -26,7 +26,9 @@ function script2Accessory(log, config) {
   this.stateCommand = config['state'];
   this.onValue = config['on_value'];
   this.fileState = config['fileState'] || false;
-  this.onValue = this.onValue.trim().toLowerCase();
+  if (this.fileState) {
+    this.onValue = this.onValue.trim().toLowerCase();
+  }
   //this.exactMatch = config['exact_match'] || true;
 }
 
