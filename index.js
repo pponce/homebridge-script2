@@ -24,7 +24,7 @@ function script2Accessory(log, config) {
   this.onCommand = config['on'];
   this.offCommand = config['off'];
   this.stateCommand = config['state'];
-  this.onValue = config['on_value'];
+  this.onValue = config['on_value'] || "true";
   this.fileState = config['fileState'] || false;
   if (!this.fileState) {
     this.onValue = this.onValue.trim().toLowerCase();
