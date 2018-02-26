@@ -71,6 +71,9 @@ script2Accessory.prototype.getState = function(callback) {
       callback(null, cleanOut == accessory.onValue);
     });
   }
+  else {
+      accessory.log('Must set config value for fileState or state.');
+  }
 }
 
 script2Accessory.prototype.getServices = function() {
