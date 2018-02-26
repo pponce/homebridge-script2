@@ -28,9 +28,9 @@ Name | Value | Required | Notes
 `name` | _(custom)_ | yes | Name of accessory that will appear in homekit app and is required
 `on` | _(custom)_ | yes | Location of script to execute the on action and is required
 `off` | _(custom)_ | yes | Location of script to execute the off action and is required
-`fileState` | _(custom)_ | no (see note) | Location of file that flags on or off current state. If this is configured the plugin will use the existence of this file to determine the current on or off state. If file exists, accessory is determined to be on. If file does not exist, accessory is determined to be off. This is not required. But if set, it will override using the state script. fileState or state must be configured.
-`state` | _(custom)_ | no (see note) | Location of script to execute the current state check. It must output to stdout the current state. It is not required if fileState is being used instead. fileState or state must be configured.
-`on_value` | _(custom)_ | no (see note) | Used in conjunction with the state script. If using the state script this is the value that will be used to match against the state script output. If this value matches the output, then the accessory will be determined to be on. Required if using state script.
+`fileState` | _(custom)_ | no* (see note) | Location of file that flags on or off current state. If this is configured the plugin will use the existence of this file to determine the current on or off state. If file exists, accessory is determined to be on. If file does not exist, accessory is determined to be off. This is not required. But if set, it will override using the state script. fileState or state must be configured.
+`state` | _(custom)_ | no* (see note) | Location of script to execute the current state check. It must output to stdout the current state. It is not required if fileState is being used instead. fileState or state must be configured.
+`on_value` | _(custom)_ | no* (see note, default set to "true") | Used in conjunction with the state script. If using the state script this is the value that will be used to match against the state script output. If this value matches the output, then the accessory will be determined to be on. Required if using state script.
 
 ## Configuration
 
