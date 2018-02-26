@@ -23,7 +23,7 @@ function script2Accessory(log, config) {
   this.name = config['name'];
   this.onCommand = config['on'];
   this.offCommand = config['off'];
-  this.stateCommand = config['state'];
+  this.stateCommand = config['state'] || false;
   this.onValue = config['on_value'] || "true";
   this.fileState = config['fileState'] || false;
   if (!this.fileState) {
@@ -64,7 +64,7 @@ script2Accessory.prototype.getState = function(callback) {
     accessory.log('State of ' + accessory.name + ' is: ' + flagFile);
     callback(null, flagFile);
   }
-  else {
+  else if (this.stateCommand) {
     exec(command, function (error, stdout, stderr) {
       var cleanOut=stdout.trim().toLowerCase();
       accessory.log('State of ' + accessory.name + ' is: ' + cleanOut);
