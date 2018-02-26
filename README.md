@@ -23,7 +23,7 @@ For autostart homebridge with OSX copy com.homebridge.startup.plist to /Library/
 Homebridge-script configuration parameters
 
 Name | Value | Required | Notes
------------ | ------- | ------------ | --------------
+----------- | ------- | -------------- | --------------
 `accessory` | "Script2" | yes | Must be set to "Script2" and is required
 `name` | _(custom)_ | yes | Name of accessory that will appear in homekit app and is required
 `on` | _(custom)_ | yes | Location of script to execute the on action and is required
