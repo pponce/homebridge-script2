@@ -5,6 +5,7 @@ var sys = require('sys');
     exec = require('child_process').exec;
     assign = require('object-assign');
     fileExists = require('file-exists');
+    chokidar = require('chokidar');
 
 module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
@@ -91,6 +92,22 @@ script2Accessory.prototype.getServices = function() {
   if (this.stateCommand || this.fileState) {
     characteristic.on('get', this.getState.bind(this))
   };
+  
+  if (this.fileState) {
+    var fileCreatedHandler = function(path, stats){
+      this.log('File ' + path + ' was created');
+      switchService.setCharacteristic(Characteristic.On, true);
+    }.bind(this);
+  
+    var fileRemovedHandler = function(path, stats){
+      this.log('File ' + path + ' was deleted');
+      switchService.setCharacteristic(Characteristic.On, false);
+    }.bind(this);
+  
+    var watcher = chokidar.watch(this.fileState, {alwaysStat: true});
+    watcher.on('add', fileCreatedHandler);
+    watcher.on('unlink', fileRemovedHandler);
+  }
 
   return [switchService];
 }
