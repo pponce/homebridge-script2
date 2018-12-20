@@ -52,6 +52,7 @@ script2Accessory.prototype.setState = function(powerOn, callback) {
 
     exec(command, puts);
     accessory.log('Set ' + accessory.name + ' to ' + state);
+    accessory.currentState = powerOn;
     callback(null);
 }
 
