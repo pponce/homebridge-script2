@@ -90,25 +90,27 @@ script2Accessory.prototype.getServices = function() {
   .on('set', this.setState.bind(this));
 
   if (this.stateCommand || this.fileState) {
-    if (this.stateCommand) {  
-        characteristic.on('get', this.getState.bind(this))
-    }
-      
-    if (this.fileState) {
-        var fileCreatedHandler = function(path, stats){
-            this.log('File ' + path + ' was created');
-            switchService.setCharacteristic(Characteristic.On, true);
-        }.bind(this);
-  
-        var fileRemovedHandler = function(path, stats){
-            this.log('File ' + path + ' was deleted');
-            switchService.setCharacteristic(Characteristic.On, false);
-        }.bind(this);
-  
-        var watcher = chokidar.watch(this.fileState, {alwaysStat: true});
-        watcher.on('add', fileCreatedHandler);
-        watcher.on('unlink', fileRemovedHandler);
-    }
+    characteristic.on('get', this.getState.bind(this))
   };
+  
+  if (this.fileState) {
+    var fileCreatedHandler = function(path, stats){
+      if (!this.currentState) {
+          this.log('File ' + path + ' was created');
+	      switchService.setCharacteristic(Characteristic.On, true);
+      }
+    }.bind(this);
+  
+    var fileRemovedHandler = function(path, stats){
+      if (this.currentState) {
+          this.log('File ' + path + ' was deleted');
+	      switchService.setCharacteristic(Characteristic.On, false);
+	  }
+    }.bind(this);
+  
+    var watcher = chokidar.watch(this.fileState, {alwaysStat: true});
+    watcher.on('add', fileCreatedHandler);
+    watcher.on('unlink', fileRemovedHandler);
+  }
   return [switchService];
 }
