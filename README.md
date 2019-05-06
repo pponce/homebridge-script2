@@ -75,6 +75,6 @@ Name | Value | Required | Notes
 - The on.sh script executes when you turn on the accessory via a homekit app. (In this case we are executing a state script to determine on or off current state.)
 - The off.sh script executes when you turn off the accessory via a homekit app. ( In this case we are executing a state script to determine on or off current state.)
 - The state.sh script in this case would be executed to check current state.  Insure that this script outputs to stdout the matching on value as configured by the on_value config parameter. If the on_value matches the on value output of this script then the accessory will be determined to be on.
-- The configured fileState file is not used in this example. Because it was not configured the state script is being used.
+- The configured fileState file is not used in this example. Because it was not configured, the state script is being used.
 - The on_value in this case is used to match against the state script output. If the value matches the output of the state script, the accessory is determined to be on.
 
