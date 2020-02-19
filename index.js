@@ -1,11 +1,10 @@
 var Service;
 var Characteristic;
 
-var sys = require('sys');
-    exec = require('child_process').exec;
-    assign = require('object-assign');
-    fileExists = require('file-exists');
-    chokidar = require('chokidar');
+var exec = require('child_process').exec;
+var assign = require('object-assign');
+var fileExists = require('file-exists');
+var chokidar = require('chokidar');
 
 module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
