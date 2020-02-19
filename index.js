@@ -58,7 +58,6 @@ script2Accessory.prototype.setState = function(powerOn, callback) {
 
 script2Accessory.prototype.getState = function(callback) {
   var accessory = this;
-  var command = accessory['stateCommand'];
   var stdout = "none";  
   
   if (this.fileState) {
@@ -67,7 +66,7 @@ script2Accessory.prototype.getState = function(callback) {
     callback(null, flagFile);
   }
   else if (this.stateCommand) {
-    exec(command, function (error, stdout, stderr) {
+    exec(this.stateCommand, function (error, stdout, stderr) {
       var cleanOut=stdout.trim().toLowerCase();
       accessory.log('State of ' + accessory.name + ' is: ' + cleanOut);
       callback(null, cleanOut == accessory.onValue);
