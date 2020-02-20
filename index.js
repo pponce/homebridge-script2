@@ -57,7 +57,6 @@ script2Accessory.prototype.setState = function(powerOn, callback) {
 
 script2Accessory.prototype.getState = function(callback) {
   var accessory = this;
-  var stdout = "none";  
   
   if (this.fileState) {
     var flagFile = fileExists.sync(this.fileState);
