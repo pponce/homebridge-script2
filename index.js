@@ -65,6 +65,7 @@ script2Accessory.prototype.getState = function(callback) {
   }
   else if (this.stateCommand) {
     exec(this.stateCommand, function (error, stdout, stderr) {
+      if (stderr) { return; }
       var cleanOut=stdout.trim().toLowerCase();
       accessory.log('State of ' + accessory.name + ' is: ' + cleanOut);
       callback(null, cleanOut == accessory.onValue);
