@@ -29,6 +29,7 @@ function script2Accessory(log, config) {
   if (!this.fileState) {
     this.onValue = this.onValue.trim().toLowerCase();
   }
+  this.uniqueSerial = config['unique_serial'] || "script2 Serial Number";
   //this.exactMatch = config['exact_match'] || true;
 }
 
@@ -83,7 +84,7 @@ script2Accessory.prototype.getServices = function() {
   informationService
   .setCharacteristic(Characteristic.Manufacturer, 'script2 Manufacturer')
   .setCharacteristic(Characteristic.Model, 'script2 Model')
-  .setCharacteristic(Characteristic.SerialNumber, 'script2 Serial Number');
+  .setCharacteristic(Characteristic.SerialNumber, this.uniqueSerial);
 
   var characteristic = switchService.getCharacteristic(Characteristic.On)
   .on('set', this.setState.bind(this));
