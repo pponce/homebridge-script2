@@ -31,7 +31,7 @@ Name | Value | Required | Notes
 `fileState` | _(custom)_ | fileState or state is required (see note) | Location of file that flags on or off current state. If this is configured the plugin will use the existence of this file to determine the current on or off state. If file exists, accessory is determined to be on. If file does not exist, accessory is determined to be off. This is not required. But if set, it will override using the state script. fileState or state must be configured.
 `state` | _(custom)_ | fileState or state is required (see note) | Location of script to execute the current state check. It must output to stdout the current state. It is not required if fileState is being used instead. fileState or state must be configured.
 `on_value` | _(custom)_ | no* (see note, default set to "true") | Used in conjunction with the state script. If using the state script this is the value that will be used to match against the state script output. If this value matches the output, then the accessory will be determined to be on. Required if using state script.
-`unique_serial` | _(custom)_ | no (default set to "Script2 Serial number") | If you have more than one "accessory" configured, please set unique values for each accessory. Required for the Eve app.
+`unique_serial` | _(custom)_ | no (default set to "Script2 Serial number") | If you have more than one "accessory" configured, please set unique values for each accessory. Unique values per accessory required for the Eve app.
 
 ## Configuration
 
