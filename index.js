@@ -78,11 +78,11 @@ script2Accessory.prototype.getState = function(callback) {
 }
 
 script2Accessory.prototype.getServices = function() {
-  var this.informationService = new Service.AccessoryInformation();
+  var informationService = new Service.AccessoryInformation();
   var switchService = new Service.Switch(this.name);
   var theSerial = this.uniqueSerial.toString();
 
-  this.informationService
+  informationService
   .setCharacteristic(Characteristic.Manufacturer, 'script2 Manufacturer')
   .setCharacteristic(Characteristic.Model, 'script2 Model')
   .setCharacteristic(Characteristic.SerialNumber, theSerial);
@@ -113,5 +113,5 @@ script2Accessory.prototype.getServices = function() {
     watcher.on('add', fileCreatedHandler);
     watcher.on('unlink', fileRemovedHandler);
   }
-  return [this.informationService, switchService];
+  return [informationService, switchService];
 }
