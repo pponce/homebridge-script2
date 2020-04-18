@@ -80,11 +80,12 @@ script2Accessory.prototype.getState = function(callback) {
 script2Accessory.prototype.getServices = function() {
   var informationService = new Service.AccessoryInformation();
   var switchService = new Service.Switch(this.name);
+  var theSerial = this.uniqueSerial.toString();
 
   informationService
   .setCharacteristic(Characteristic.Manufacturer, 'script2 Manufacturer')
   .setCharacteristic(Characteristic.Model, 'script2 Model')
-  .setCharacteristic(Characteristic.SerialNumber, this.uniqueSerial);
+  .setCharacteristic(Characteristic.SerialNumber, theSerial);
 
   var characteristic = switchService.getCharacteristic(Characteristic.On)
   .on('set', this.setState.bind(this));
