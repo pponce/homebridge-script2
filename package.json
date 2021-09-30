@@ -1,11 +1,11 @@
 {
-  "name": "homebridge-script2",
+  "name": "homebridge-script2-garage-fork",
   "version": "0.3.0",
   "license": "MIT",
   "description": "script plugin for homebridge: https://github.com/nfarina/homebridge",
   "keywords": [
     "homebridge-plugin",
-    "homebridge-script2"
+    "homebridge-script2-garage-fork"
   ],
   "repository": {
     "type": "git",
