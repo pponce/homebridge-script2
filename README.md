@@ -7,7 +7,7 @@ Core of the code written by [@xxcombat](https://github.com/xxcombat/). Great plu
 Original plugin [homebridge-script](https://github.com/xxcombat/homebridge-script).
 
 Because it appears that the original [homebridge-script](https://github.com/xxcombat/homebridge-script) plugin has stopped being maintained and supported and PR's are also not being accepted. I've updated it to allow for executing a state script or work by checking for the existance of a file. Thanks to [@ybizeul](https://github.com/ybizeul/) for the code snipet that allows for state.sh to execute. This plugin also works with the latest file-exists that broke the original plugin.
-While this fork depends on file-exists there is no need to install it seperately for this fork, as i've included it as a dependency.
+While this fork depends on file-exists there is no need to install it seperately for this fork, as I've included it as a dependency.
 
 
 ## Installation
@@ -18,39 +18,40 @@ While this fork depends on file-exists there is no need to install it seperately
 3. Update your configuration file. See examples below that show the plugin working by using filestate for current state check as well as an example using state.sh script for current state check.
 4. Make sure scripts have been made executable (chmod +x scriptname.sh) and also accessible by the homebridge user. 
 
-For autostart homebridge with OSX copy com.homebridge.startup.plist to /Library/LaunchDaemons
 
 Homebridge-script configuration parameters
 
-Name | Value | Required | Notes
------------ | ------- | -------------- | --------------
-`accessory` | "Script2" | yes | Must be set to "Script2" and is required
-`name` | _(custom)_ | yes | Name of accessory that will appear in homekit app and is required
-`on` | _(custom)_ | yes | Location of script to execute the on action and is required
-`off` | _(custom)_ | yes | Location of script to execute the off action and is required
-`fileState` | _(custom)_ | fileState or state is required (see note) | Location of file that flags on or off current state. If this is configured the plugin will use the existence of this file to determine the current on or off state. If file exists, accessory is determined to be on. If file does not exist, accessory is determined to be off. This is not required. But if set, it will override using the state script. fileState or state must be configured. Use full path when setting this it's value. Do not use "~/".
-`state` | _(custom)_ | fileState or state is required (see note) | Location of script to execute the current state check. It must output to stdout the current state. It is not required if fileState is being used instead. fileState or state must be configured.
-`on_value` | _(custom)_ | no* (see note, default set to "true") | Used in conjunction with the state script. If using the state script this is the value that will be used to match against the state script output. If this value matches the output, then the accessory will be determined to be on. Required if using state script.
-`unique_serial` | _(custom)_ | no (default set to "Script2 Serial number") | If you have more than one "accessory" configured, please set unique values for each accessory. Unique values per accessory required for the Eve app.
+Name            | Value         | Required                                    | Notes
+--------------- | ------------- | ------------------------------------------- | -------------
+`accessory`     | "Script2"     | yes                                         | Must be set to "Script2" and is required
+`name`          | _(custom)_    | yes                                         | Name of accessory that will appear in homekit app and is required
+`on`            | _(custom)_    | yes                                         | Location of script to execute the on action and is required
+`off`           | _(custom)_    | yes                                         | Location of script to execute the off action and is required
+`fileState`     | _(custom)_    | fileState or state is required (see note)   | Location of file that flags on or off current state. If this is configured the plugin will use the existence of this file to determine the current on or off state. If file exists, accessory is determined to be on. If file does not exist, accessory is determined to be off. This is not required. But if set, it will override using the state script. fileState or state must be configured. Use full path when setting this it's value. Do not use "~/".
+`state`         | _(custom)_    | fileState or state is required (see note)   | Location of script to execute the current state check. It must output to stdout the current state. It is not required if fileState is being used instead. fileState or state must be configured.
+`on_value`      | _(custom)_    | no* (see note, default set to "true")       | Used in conjunction with the state script. If using the state script this is the value that will be used to match against the state script output. If this value matches the output, then the accessory will be determined to be on. Required if using state script.
+`unique_serial` | _(custom)_    | no (default set to "Script2 Serial number") | If you have more than one "accessory" configured, please set unique values for each accessory. Unique values per accessory required for the Eve app.
 
 ## Configuration
 
 ### Configuration example 1, using filestate for current state check:
 
 ```
-"accessories": [
-	{
-              "accessory": "Script2",
-              "name": "RPC3 Socket 1",
-              "on": "/var/homebridge/rpc3control/on.sh 1",
-              "off": "/var/homebridge/rpc3control/off.sh 1",
-              "state": "/var/homebridge/rpc3control/state.sh 1",
-              "fileState": "/var/homebridge/rpc3control/script1.flag",
-              "on_value" : "true",
-	      "unique_serial" : "1234567"
-	}
+"accessories":
+[
+    {
+        "accessory": "Script2",
+        "name": "RPC3 Socket 1",
+        "on": "/var/homebridge/rpc3control/on.sh 1",
+        "off": "/var/homebridge/rpc3control/off.sh 1",
+        "state": "/var/homebridge/rpc3control/state.sh 1",
+        "fileState": "/var/homebridge/rpc3control/script1.flag",
+        "on_value": "true",
+        "unique_serial": "1234567"
+    }
 ]
 ```
+
 #### Notes
 ##### Using the above configuration as an example:
 - The on.sh script executes when you turn on the accessory via a homekit app. (In this case we are the using existence of a file to determine on or off current state, so you must insure the on.sh script creates the configured fileState file.
@@ -60,19 +61,22 @@ Name | Value | Required | Notes
 - The on_value in this case is not being used as it is only used when the state script is used to check for current state.
 
 ### Configuration example 2, executing state.sh script for current state check:
+
 ```
-"accessories": [
-	{
-              "accessory": "Script2",
-              "name": "Alarm of bike",
-              "on": "~/on.sh",
-              "off": "~/off.sh",
-              "state": "~/state.sh",
-              "on_value" : "true",
-	      "unique_serial" : "1234567"
-	}
+"accessories":
+[
+    {
+        "accessory": "Script2",
+        "name": "Alarm of bike",
+        "on": "~/on.sh",
+        "off": "~/off.sh",
+        "state": "~/state.sh",
+        "on_value": "true",
+        "unique_serial": "1234567"
+    }
 ]
 ```
+
 #### Notes
 ##### Using the above configuration as an example:
 - The on.sh script executes when you turn on the accessory via a homekit app. (In this case we are executing a state script to determine on or off current state.)
