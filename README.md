@@ -1,5 +1,5 @@
 homebridge-script2
-==============
+==================
 
 Execute custom scripts via homekit apps.
 

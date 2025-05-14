@@ -1,117 +1,156 @@
-var Service;
-var Characteristic;
+let Service;
+let Characteristic;
 
-var exec = require('child_process').exec;
-var assign = require('object-assign');
-var fileExists = require('file-exists');
-var chokidar = require('chokidar');
+const exec = require("child_process").exec;
+const fileExists = require("file-exists");
+const chokidar = require("chokidar");
 
-module.exports = function(homebridge) {
+module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
-  homebridge.registerAccessory('homebridge-script2', 'Script2', script2Accessory);
-}
-
-function puts(error, stdout, stderr) {
-   console.log(stdout)
-}
+  homebridge.registerAccessory(
+    "homebridge-script2",
+    "Script2",
+    script2Accessory
+  );
+};
 
 function script2Accessory(log, config) {
   this.log = log;
-  this.service = 'Switch';
+  this.service = "Switch";
 
-  this.name = config['name'];
-  this.onCommand = config['on'];
-  this.offCommand = config['off'];
-  this.stateCommand = config['state'] || false;
-  this.onValue = config['on_value'] || "true";
-  this.fileState = config['fileState'] || false;
-  if (!this.fileState) {
-    this.onValue = this.onValue.trim().toLowerCase();
+  this.name = config["name"];
+  this.onCommand = config["on"];
+  this.offCommand = config["off"];
+  this.stateCommand = config["state"] || false;
+  this.onValue = config["on_value"] || "true";
+  this.fileState = config["fileState"] || false;
+  this.uniqueSerial = config["unique_serial"] || "script2 Serial Number";
+  this.onValue = this.onValue.trim().toLowerCase();
+  try {
+    this.currentState = this.fileState
+      ? fileExists.sync(this.fileState)
+      : false;
+  } catch (err) {
+    this.log.error(`Error checking initial file state: ${err.message}`);
+    this.currentState = false;
   }
-  this.uniqueSerial = config['unique_serial'] || "script2 Serial Number";
-  //this.exactMatch = config['exact_match'] || true;
+
+  this.setStateHandler = function (powerOn, callback) {
+    function setStateHandlerExecCallback(error, stdout, stderr) {
+      if (error || stderr) {
+        const errMessage = stderr
+          ? `${stderr} (${error.message})`
+          : error.message;
+        this.log.error(`Set State returned an error: ${errMessage}`);
+        callback(new Error(errMessage), null);
+        return;
+      }
+
+      const commandOutput = stdout.trim().toLowerCase();
+      this.log.debug(`Set State Command returned ${commandOutput}`);
+
+      this.currentState = powerOn;
+      this.log.info(`Set ${this.name} to ${powerOn ? "ON" : "OFF"}`);
+
+      callback(null, powerOn);
+    }
+
+    const command = powerOn ? this.onCommand : this.offCommand;
+    this.log.debug(`Executing command: ${command}`);
+    exec(command, setStateHandlerExecCallback.bind(this));
+  };
+
+  this.getStateHandler = function (callback) {
+    function getStateHandlerExecCallback(error, stdout, stderr) {
+      if (error || stderr) {
+        const errMessage = stderr
+          ? `${stderr} (${error.message})`
+          : error.message;
+        this.log.error(`Get State returned an error: ${errMessage}`);
+        callback(new Error(errMessage), null);
+        return;
+      }
+
+      const cleanCommandOutput = stdout.trim().toLowerCase();
+      this.log.debug(`Get State Command returned ${cleanCommandOutput}`);
+
+      const poweredOn = cleanCommandOutput == this.onValue;
+      this.log.info(`State of ${this.name} is: ${poweredOn ? "ON" : "OFF"}`);
+      callback(null, poweredOn);
+    }
+
+    const command = this.stateCommand;
+    this.log.debug(`Executing command: ${command}`);
+    exec(command, getStateHandlerExecCallback.bind(this));
+  };
+
+  this.getFileStateHandler = function (callback) {
+    try {
+      const poweredOn = fileExists.sync(this.fileState);
+      this.log.info(`State of ${this.name} is: ${poweredOn ? "ON" : "OFF"}`);
+      callback(null, poweredOn);
+    } catch (err) {
+      this.log.error(`Error checking file state: ${err.message}`);
+      callback(err, null);
+    }
+  };
 }
 
-/* 
-  script2Accessory.prototype.matchesString = function(match) {
-  if(this.exactMatch) {
-    return (match === this.onValue);
-  }
-  else {
-    return (match.indexOf(this.onValue) > -1);
-  }
-}
-*/
+script2Accessory.prototype.setState = function (powerOn, callback) {
+  this.log.info(`Setting ${this.name} to ${powerOn ? "ON" : "OFF"}...`);
+  this.setStateHandler(powerOn, callback);
+};
 
-script2Accessory.prototype.setState = function(powerOn, callback) {
-  var accessory = this;
-  var state = powerOn ? 'on' : 'off';
-  var prop = state + 'Command';
-  var command = accessory[prop];
-
-    exec(command, puts);
-    accessory.log('Set ' + accessory.name + ' to ' + state);
-    accessory.currentState = powerOn;
-    callback(null);
-}
-
-script2Accessory.prototype.getState = function(callback) {
-  var accessory = this;
-  
+script2Accessory.prototype.getState = function (callback) {
+  this.log.info(`Getting ${this.name} state...`);
   if (this.fileState) {
-    var flagFile = fileExists.sync(this.fileState);
-    accessory.log('State of ' + accessory.name + ' is: ' + flagFile);
-    callback(null, flagFile);
+    this.getFileStateHandler(callback);
+  } else if (this.stateCommand) {
+    this.getStateHandler(callback);
+  } else {
+    this.log.error("Must set config value for fileState or state.");
   }
-  else if (this.stateCommand) {
-    exec(this.stateCommand, function (error, stdout, stderr) {
-      if (stderr) { return; }
-      var cleanOut=stdout.trim().toLowerCase();
-      accessory.log('State of ' + accessory.name + ' is: ' + cleanOut);
-      callback(null, cleanOut == accessory.onValue);
-    });
-  }
-  else {
-      accessory.log('Must set config value for fileState or state.');
-  }
-}
+};
 
-script2Accessory.prototype.getServices = function() {
-  var informationService = new Service.AccessoryInformation();
-  var switchService = new Service.Switch(this.name);
-  var theSerial = this.uniqueSerial.toString();
+script2Accessory.prototype.getServices = function () {
+  const informationService = new Service.AccessoryInformation();
+  const switchService = new Service.Switch(this.name);
+  const theSerial = this.uniqueSerial.toString();
 
   informationService
-  .setCharacteristic(Characteristic.Manufacturer, 'script2 Manufacturer')
-  .setCharacteristic(Characteristic.Model, 'script2 Model')
-  .setCharacteristic(Characteristic.SerialNumber, theSerial);
+    .setCharacteristic(Characteristic.Manufacturer, "script2 Manufacturer")
+    .setCharacteristic(Characteristic.Model, "script2 Model")
+    .setCharacteristic(Characteristic.SerialNumber, theSerial);
 
-  var characteristic = switchService.getCharacteristic(Characteristic.On)
-  .on('set', this.setState.bind(this));
+  const characteristic = switchService
+    .getCharacteristic(Characteristic.On)
+    .on("set", this.setState.bind(this));
 
   if (this.stateCommand || this.fileState) {
-    characteristic.on('get', this.getState.bind(this))
-  };
-  
+    characteristic.on("get", this.getState.bind(this));
+  }
+
   if (this.fileState) {
-    var fileCreatedHandler = function(path, stats){
+    const fileCreatedHandler = function (path, stats) {
       if (!this.currentState) {
-          this.log('File ' + path + ' was created');
-	      switchService.setCharacteristic(Characteristic.On, true);
+        this.log.info(`File "${path}" was created`);
+        this.currentState = true;
+        switchService.setCharacteristic(Characteristic.On, true);
       }
     }.bind(this);
-  
-    var fileRemovedHandler = function(path, stats){
+
+    const fileRemovedHandler = function (path, stats) {
       if (this.currentState) {
-          this.log('File ' + path + ' was deleted');
-	      switchService.setCharacteristic(Characteristic.On, false);
-	  }
+        this.log.info(`File "${path}" was deleted`);
+        this.currentState = false;
+        switchService.setCharacteristic(Characteristic.On, false);
+      }
     }.bind(this);
-  
-    var watcher = chokidar.watch(this.fileState, {alwaysStat: true});
-    watcher.on('add', fileCreatedHandler);
-    watcher.on('unlink', fileRemovedHandler);
+
+    const watcher = chokidar.watch(this.fileState, { alwaysStat: true });
+    watcher.on("add", fileCreatedHandler);
+    watcher.on("unlink", fileRemovedHandler);
   }
   return [informationService, switchService];
-}
+};
