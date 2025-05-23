@@ -40,8 +40,8 @@ function script2Accessory(log, config) {
     function setStateHandlerExecCallback(error, stdout, stderr) {
       if (error || stderr) {
         const errMessage = stderr
-          ? `${stderr} (${error.message})`
-          : error.message;
+          ? `${stderr} (${error?.message ?? 'unknown error'})`
+          : `${error?.message ?? 'unknown error'}`;
         this.log.error(`Set State returned an error: ${errMessage}`);
         callback(new Error(errMessage), null);
         return;
