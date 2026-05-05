@@ -12,8 +12,8 @@
     "url": "git://github.com/pponce/homebridge-script2.git"
   },
   "engines": {
-    "homebridge": ">=0.2.0",
-    "node": ">=6.0.0"
+    "homebridge": ">=1.0.0 || ^2.0.0-beta.0",
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "object-assign": "^4.1.1",
