@@ -10,6 +10,60 @@ Because it appears that the original [homebridge-script](https://github.com/xxco
 While this fork depends on file-exists there is no need to install it seperately for this fork, as I've included it as a dependency.
 
 
+
+## Platform mode (beta)
+
+This plugin now supports **both**:
+- Legacy accessory mode (backward compatible)
+- New dynamic platform mode (`Script2Platform`)
+
+### Backward compatibility
+- Existing accessory-based setups remain supported and unchanged.
+- If you choose to move to platform mode, you should remove the existing setup completely and start fresh with a new `platforms` configuration.
+
+### Strong recommendation: use a Child Bridge
+Because this plugin depends on external scripts and shell execution, it is highly recommended to run it in a dedicated **Child Bridge** for reliability and isolation.
+
+### Platform configuration parameters
+Each entry in `devices` supports the same options as accessory mode:
+
+Name            | Value         | Required                                    | Notes
+--------------- | ------------- | ------------------------------------------- | -------------
+`name`          | _(custom)_    | yes                                         | Name of accessory that will appear in Home app and is required
+`on`            | _(custom)_    | yes                                         | Script/command to execute the on action
+`off`           | _(custom)_    | yes                                         | Script/command to execute the off action
+`fileState`     | _(custom)_    | fileState or state is required (see note)   | File used as current state flag
+`state`         | _(custom)_    | fileState or state is required (see note)   | Script to determine current state
+`on_value`      | _(custom)_    | no* (default set to `"true"`)             | Value matched against `state` command output
+`unique_serial` | _(custom)_    | no (default set to `"Script2 Serial number"`) | Unique serial per device is recommended
+
+### Platform configuration example
+
+```
+"platforms": [
+  {
+    "platform": "Script2Platform",
+    "name": "Script2",
+    "devices": [
+      {
+        "name": "RPC3 Socket 1",
+        "on": "/var/homebridge/rpc3control/on.sh 1",
+        "off": "/var/homebridge/rpc3control/off.sh 1",
+        "state": "/var/homebridge/rpc3control/state.sh 1",
+        "fileState": "/var/homebridge/rpc3control/script1.flag",
+        "on_value": "true",
+        "unique_serial": "platform-1234567"
+      }
+    ]
+  }
+]
+```
+
+
+### State script behavior
+The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
+If the script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
+
 ## Installation
 (Requires node >=6.0.0)
 
