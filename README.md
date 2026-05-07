@@ -35,6 +35,9 @@ Name            | Value         | Required                                    | 
 `fileState`     | _(custom)_    | fileState or state is required (see note)   | File used as current state flag
 `state`         | _(custom)_    | fileState or state is required (see note)   | Script to determine current state
 `on_value`      | _(custom)_    | no* (default set to `"true"`)             | Value matched against `state` command output
+`polling`       | `true/false`  | no (default `false`)                       | Enables periodic polling for `state` command mode only
+`polling_interval` | integer ms | no (default `5000`)                        | Poll interval in milliseconds when `polling` is enabled
+`polling_on_start` | `true/false` | no (default `true`)                     | Immediately run a state poll when Homebridge starts
 `unique_serial` | _(custom)_    | no (default set to `"Script2 Serial number"`) | Unique serial per device is recommended
 
 ### Platform configuration example
@@ -52,6 +55,9 @@ Name            | Value         | Required                                    | 
         "state": "/var/homebridge/rpc3control/state.sh 1",
         "fileState": "/var/homebridge/rpc3control/script1.flag",
         "on_value": "true",
+        "polling": false,
+        "polling_interval": 5000,
+        "polling_on_start": true,
         "unique_serial": "platform-1234567"
       }
     ]
@@ -63,6 +69,8 @@ Name            | Value         | Required                                    | 
 ### State script behavior
 The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
 If the script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
+When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
+Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications.
 
 ## Installation
 (Requires node >=6.0.0)
@@ -84,6 +92,9 @@ Name            | Value         | Required                                    | 
 `fileState`     | _(custom)_    | fileState or state is required (see note)   | Location of file that flags on or off current state. If this is configured the plugin will use the existence of this file to determine the current on or off state. If file exists, accessory is determined to be on. If file does not exist, accessory is determined to be off. This is not required. But if set, it will override using the state script. fileState or state must be configured. Use full path when setting this it's value. Do not use "~/".
 `state`         | _(custom)_    | fileState or state is required (see note)   | Location of script to execute the current state check. It must output to stdout the current state. It is not required if fileState is being used instead. fileState or state must be configured.
 `on_value`      | _(custom)_    | no* (see note, default set to "true")       | Used in conjunction with the state script. If using the state script this is the value that will be used to match against the state script output. If this value matches the output, then the accessory will be determined to be on. Required if using state script.
+`polling`       | `true/false`  | no (default `false`)                         | Enables periodic state checks when using `state` script mode (ignored when `fileState` is configured)
+`polling_interval` | integer ms | no (default `5000`)                          | Poll interval in milliseconds when `polling` is enabled
+`polling_on_start` | `true/false` | no (default `true`)                       | Immediately run a poll on startup before waiting for the interval
 `unique_serial` | _(custom)_    | no (default set to "Script2 Serial number") | If you have more than one "accessory" configured, please set unique values for each accessory. Unique values per accessory required for the Eve app.
 
 ## Configuration
@@ -138,4 +149,3 @@ Name            | Value         | Required                                    | 
 - The state.sh script in this case would be executed to check current state.  Insure that this script outputs to stdout the matching on value as configured by the on_value config parameter. If the on_value matches the on value output of this script then the accessory will be determined to be on.
 - The configured fileState file is not used in this example. Because it was not configured, the state script is being used.
 - The on_value in this case is used to match against the state script output. If the value matches the output of the state script, the accessory is determined to be on.
-

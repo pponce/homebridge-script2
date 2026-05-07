@@ -117,9 +117,14 @@ function Script2DeviceLogic(log, config) {
   this.stateCommand = config["state"] || false;
   this.onValue = config["on_value"] || "true";
   this.fileState = config["fileState"] || false;
+  this.polling = config["polling"] || false;
+  this.pollingInterval = Number(config["polling_interval"] || 5000);
+  this.pollingOnStart =
+    config["polling_on_start"] === undefined ? true : !!config["polling_on_start"];
   this.uniqueSerial = config["unique_serial"] || "script2 Serial Number";
   this.onValue = this.onValue.trim().toLowerCase();
   this.watcher = null;
+  this.pollTimer = null;
 
   try {
     this.currentState = this.fileState ? fileExists.sync(this.fileState) : false;
@@ -130,12 +135,32 @@ function Script2DeviceLogic(log, config) {
 }
 
 Script2DeviceLogic.prototype.shutdown = function () {
+  if (this.pollTimer) {
+    clearInterval(this.pollTimer);
+    this.pollTimer = null;
+  }
+
   if (this.watcher) {
     this.watcher.close().catch((err) => {
       this.log.warn(`Error while closing file watcher for ${this.name}: ${err.message}`);
     });
     this.watcher = null;
   }
+};
+
+Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
+  this.getState((err, poweredOn) => {
+    if (err) {
+      this.log.warn(`Polling state failed for ${this.name}: ${err.message}`);
+      return;
+    }
+
+    if (this.currentState !== poweredOn) {
+      this.currentState = poweredOn;
+      switchService.updateCharacteristic(Characteristic.On, poweredOn);
+      this.log.info(`Polled state update for ${this.name}: ${poweredOn ? "ON" : "OFF"}`);
+    }
+  });
 };
 
 Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
@@ -261,6 +286,23 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
     this.watcher = chokidar.watch(this.fileState, { alwaysStat: true });
     this.watcher.on("add", fileCreatedHandler);
     this.watcher.on("unlink", fileRemovedHandler);
+  }
+
+  if (!this.fileState && this.stateCommand && this.polling) {
+    if (!Number.isFinite(this.pollingInterval) || this.pollingInterval <= 0) {
+      this.log.warn(
+        `Invalid polling_interval '${this.pollingInterval}' for ${this.name}; using default 5000ms.`
+      );
+      this.pollingInterval = 5000;
+    }
+
+    if (this.pollingOnStart) {
+      this.pollStateAndUpdateCharacteristic(switchService);
+    }
+
+    this.pollTimer = setInterval(() => {
+      this.pollStateAndUpdateCharacteristic(switchService);
+    }, this.pollingInterval);
   }
 };
 
