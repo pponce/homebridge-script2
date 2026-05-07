@@ -41,7 +41,7 @@
             "fileState": {
               "title": "State File Path",
               "type": "string",
-              "description": "If set, state is based on file existence and overrides state command.",
+              "description": "If set, the on/off state is based on file existence and overrides state command.",
               "placeholder": "/var/homebridge/scripts/device1.flag"
             },
             "state": {
