@@ -117,9 +117,24 @@ function Script2DeviceLogic(log, config) {
   this.stateCommand = config["state"] || false;
   this.onValue = config["on_value"] || "true";
   this.fileState = config["fileState"] || false;
+  this.polling = config["polling"] || false;
+  this.pollingInterval = Number(config["polling_interval"] || 5000);
+  this.pollingOnStart =
+    config["polling_on_start"] === undefined ? true : !!config["polling_on_start"];
+  this.stateCacheTtlMs = Number(config["state_cache_ttl_ms"] ?? 1000);
   this.uniqueSerial = config["unique_serial"] || "script2 Serial Number";
   this.onValue = this.onValue.trim().toLowerCase();
   this.watcher = null;
+  this.pollTimer = null;
+  this.lastStateRead = null;
+  this.lastStateReadAt = 0;
+  this.inFlightStateCallbacks = null;
+
+  if (this.fileState && this.stateCommand) {
+    this.log.warn(
+      `${this.name}: both 'fileState' and 'state' are configured. The state script will not be executed for status changes; the configured file flag will be used instead. To use the state script, remove the 'fileState' config parameter.`
+    );
+  }
 
   try {
     this.currentState = this.fileState ? fileExists.sync(this.fileState) : false;
@@ -130,6 +145,11 @@ function Script2DeviceLogic(log, config) {
 }
 
 Script2DeviceLogic.prototype.shutdown = function () {
+  if (this.pollTimer) {
+    clearInterval(this.pollTimer);
+    this.pollTimer = null;
+  }
+
   if (this.watcher) {
     this.watcher.close().catch((err) => {
       this.log.warn(`Error while closing file watcher for ${this.name}: ${err.message}`);
@@ -138,8 +158,22 @@ Script2DeviceLogic.prototype.shutdown = function () {
   }
 };
 
+Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
+  this.getState((err, poweredOn) => {
+    if (err) {
+      this.log.warn(`Polling state failed for ${this.name}: ${err.message}`);
+      return;
+    }
+
+    if (this.currentState !== poweredOn) {
+      this.currentState = poweredOn;
+      switchService.updateCharacteristic(Characteristic.On, poweredOn);
+    }
+  }, "polling");
+};
+
 Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
-  this.log.info(`Setting ${this.name} to ${powerOn ? "ON" : "OFF"}...`);
+  this.log.debug(`Setting ${this.name} to ${powerOn ? "ON" : "OFF"}...`);
 
   const command = powerOn ? this.onCommand : this.offCommand;
   this.log.debug(`Executing command: ${command}`);
@@ -163,14 +197,14 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
   });
 };
 
-Script2DeviceLogic.prototype.getState = function (callback) {
-  this.log.info(`Getting ${this.name} state...`);
+Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homekit-get") {
+  this.log.debug(`Getting ${this.name} state...`);
 
   if (this.fileState) {
     try {
       const poweredOn = fileExists.sync(this.fileState);
-      this.log.info(`State of ${this.name} is: ${poweredOn ? "ON" : "OFF"}`);
-      callback(null, poweredOn);
+      this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: file-state)`);
+      callback(null, poweredOn, "file-state");
     } catch (err) {
       this.log.error(`Error checking file state: ${err.message}`);
       callback(err, null);
@@ -179,9 +213,44 @@ Script2DeviceLogic.prototype.getState = function (callback) {
   }
 
   if (this.stateCommand) {
+    if (!Number.isFinite(this.stateCacheTtlMs) || this.stateCacheTtlMs < 0) {
+      this.log.warn(
+        `Invalid state_cache_ttl_ms '${this.stateCacheTtlMs}' for ${this.name}; using default 1000ms.`
+      );
+      this.stateCacheTtlMs = 1000;
+    }
+
+    const now = Date.now();
+    if (
+      this.stateCacheTtlMs > 0 &&
+      this.lastStateRead !== null &&
+      now - this.lastStateReadAt <= this.stateCacheTtlMs
+    ) {
+      this.log.info(`GetState ${this.name}: ${this.lastStateRead ? "ON" : "OFF"} (path: ${requestPath}, source: ttl-cache)`);
+      callback(null, this.lastStateRead, "ttl-cache");
+      return;
+    }
+
+    if (this.inFlightStateCallbacks) {
+      this.log.debug(`State get for ${this.name} served from in-flight request.`);
+      this.inFlightStateCallbacks.push((err, poweredOn, source) => {
+        if (err) {
+          callback(err, null, source);
+          return;
+        }
+
+        this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: in-flight-coalesced)`);
+        callback(null, poweredOn, "in-flight-coalesced");
+      });
+      return;
+    }
+
+    this.inFlightStateCallbacks = [callback];
     const command = this.stateCommand;
     this.log.debug(`Executing command: ${command}`);
     exec(command, (error, stdout, stderr) => {
+      const pendingCallbacks = this.inFlightStateCallbacks || [];
+      this.inFlightStateCallbacks = null;
       const cleanCommandOutput = stdout.trim().toLowerCase();
       this.log.debug(`Get State Command returned ${cleanCommandOutput}`);
 
@@ -194,7 +263,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
           ? error.message
           : "Get State command returned empty output.";
         this.log.error(`Get State returned an error: ${errMessage}`);
-        callback(new Error(errMessage), null);
+        pendingCallbacks.forEach((cb) => cb(new Error(errMessage), null));
         return;
       }
 
@@ -205,8 +274,10 @@ Script2DeviceLogic.prototype.getState = function (callback) {
       }
 
       const poweredOn = cleanCommandOutput == this.onValue;
-      this.log.info(`State of ${this.name} is: ${poweredOn ? "ON" : "OFF"}`);
-      callback(null, poweredOn);
+      this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: state-script)`);
+      this.lastStateRead = poweredOn;
+      this.lastStateReadAt = Date.now();
+      pendingCallbacks.forEach((cb) => cb(null, poweredOn, "state-script"));
     });
     return;
   }
@@ -237,7 +308,7 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
 
   characteristic.removeAllListeners("get");
   if (this.stateCommand || this.fileState) {
-    characteristic.on("get", this.getState.bind(this));
+    characteristic.on("get", (callback) => this.getState(callback, "homekit-get"));
   }
 
   if (this.fileState) {
@@ -261,6 +332,23 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
     this.watcher = chokidar.watch(this.fileState, { alwaysStat: true });
     this.watcher.on("add", fileCreatedHandler);
     this.watcher.on("unlink", fileRemovedHandler);
+  }
+
+  if (!this.fileState && this.stateCommand && this.polling) {
+    if (!Number.isFinite(this.pollingInterval) || this.pollingInterval <= 0) {
+      this.log.warn(
+        `Invalid polling_interval '${this.pollingInterval}' for ${this.name}; using default 5000ms.`
+      );
+      this.pollingInterval = 5000;
+    }
+
+    if (this.pollingOnStart) {
+      this.pollStateAndUpdateCharacteristic(switchService);
+    }
+
+    this.pollTimer = setInterval(() => {
+      this.pollStateAndUpdateCharacteristic(switchService);
+    }, this.pollingInterval);
   }
 };
 

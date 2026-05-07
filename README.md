@@ -35,6 +35,10 @@ Name            | Value         | Required                                    | 
 `fileState`     | _(custom)_    | fileState or state is required (see note)   | File used as current state flag
 `state`         | _(custom)_    | fileState or state is required (see note)   | Script to determine current state
 `on_value`      | _(custom)_    | no* (default set to `"true"`)             | Value matched against `state` command output
+`polling`       | `true/false`  | no (default `false`)                       | Enables periodic polling for `state` command mode only
+`polling_interval` | integer ms | no (default `5000`)                        | Poll interval in milliseconds when `polling` is enabled
+`polling_on_start` | `true/false` | no (default `true`)                     | Immediately run a state poll when Homebridge starts
+`state_cache_ttl_ms` | integer ms | no (default `1000`)                     | Cache TTL for `state` reads to avoid duplicate script executions on burst GET requests
 `unique_serial` | _(custom)_    | no (default set to `"Script2 Serial number"`) | Unique serial per device is recommended
 
 ### Platform configuration example
@@ -52,6 +56,10 @@ Name            | Value         | Required                                    | 
         "state": "/var/homebridge/rpc3control/state.sh 1",
         "fileState": "/var/homebridge/rpc3control/script1.flag",
         "on_value": "true",
+        "polling": false,
+        "polling_interval": 5000,
+        "polling_on_start": true,
+        "state_cache_ttl_ms": 1000,
         "unique_serial": "platform-1234567"
       }
     ]
@@ -61,8 +69,16 @@ Name            | Value         | Required                                    | 
 
 
 ### State script behavior
-The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
-If the script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
+- The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
+- If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
+- If a script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
+- When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
+- Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications to dynamically update homekit status.
+- When `state_cache_ttl_ms` is greater than `0`, `state` reads are cached briefly to prevent duplicate script executions from burst `get` requests.
+- If multiple `get` requests arrive while a state command is already running, they are coalesced and share the same in-flight command result.
+- Each `getState` request writes a single result log entry in the format `GetState <name>: ON/OFF (path: <homekit-get|polling>, source: <state-script|ttl-cache|in-flight-coalesced|file-state>)`. Where Path is telling you if this was the result of a polling request or a homekit initiated get request (out of the plugin's control). And source is where the value was sourced from, state-script execution result, ttl cache, in-flight coalesced, or from file-state.  
+- The TTL cache is per-accessory instance (per configured outlet/switch), not global across all accessories.
+- At startup with `polling_on_start: true`, the first read for each accessory is a cache miss by design, so one state-script execution per accessory is expected before subsequent reads are served from TTL.
 
 ## Installation
 (Requires node >=6.0.0)
@@ -73,7 +89,13 @@ If the script returns a non-zero exit code but still prints a valid value to std
 4. Make sure scripts have been made executable (chmod +x scriptname.sh) and also accessible by the homebridge user. 
 
 
-Homebridge-script configuration parameters
+## Legacy accessory mode (still supported)
+
+Legacy `accessories` mode remains supported for backward compatibility.
+For new installs, platform mode is recommended.
+If you migrate from legacy accessory mode to platform mode, remove the old accessory setup and start fresh with a new `platforms` configuration.
+
+### Legacy accessory configuration parameters
 
 Name            | Value         | Required                                    | Notes
 --------------- | ------------- | ------------------------------------------- | -------------
@@ -84,11 +106,13 @@ Name            | Value         | Required                                    | 
 `fileState`     | _(custom)_    | fileState or state is required (see note)   | Location of file that flags on or off current state. If this is configured the plugin will use the existence of this file to determine the current on or off state. If file exists, accessory is determined to be on. If file does not exist, accessory is determined to be off. This is not required. But if set, it will override using the state script. fileState or state must be configured. Use full path when setting this it's value. Do not use "~/".
 `state`         | _(custom)_    | fileState or state is required (see note)   | Location of script to execute the current state check. It must output to stdout the current state. It is not required if fileState is being used instead. fileState or state must be configured.
 `on_value`      | _(custom)_    | no* (see note, default set to "true")       | Used in conjunction with the state script. If using the state script this is the value that will be used to match against the state script output. If this value matches the output, then the accessory will be determined to be on. Required if using state script.
+`polling`       | `true/false`  | no (default `false`)                         | Enables periodic state checks when using `state` script mode (ignored when `fileState` is configured)
+`polling_interval` | integer ms | no (default `5000`)                          | Poll interval in milliseconds when `polling` is enabled
+`polling_on_start` | `true/false` | no (default `true`)                       | Immediately run a poll on startup before waiting for the interval
+`state_cache_ttl_ms` | integer ms | no (default `1000`)                         | Cache TTL for `state` reads to avoid duplicate script executions on burst GET requests
 `unique_serial` | _(custom)_    | no (default set to "Script2 Serial number") | If you have more than one "accessory" configured, please set unique values for each accessory. Unique values per accessory required for the Eve app.
 
-## Configuration
-
-### Configuration example 1, using filestate for current state check:
+### Legacy configuration example 1 (`accessories`), using `fileState` for current state check:
 
 ```
 "accessories":
@@ -112,9 +136,10 @@ Name            | Value         | Required                                    | 
 - The off.sh script executes when you turn off the accessory via a homekit app. ( In this case we are using existence of a file to determine on or off current state, insure the off.sh script deletes the configured fileState file.)
 - The state.sh script in this case would not execute as fileState parameter overrides its use.
 - The configured fileState file is used as a flag. When the homekit app checks for current state it checks for the existence of this file. If it exists, current state is on. If it does not exist, current state is off.
+- HomeKit status updates are dynamic when using `fileState`: state changes are reflected as soon as the configured file is created or deleted.
 - The on_value in this case is not being used as it is only used when the state script is used to check for current state.
 
-### Configuration example 2, executing state.sh script for current state check:
+### Legacy configuration example 2 (`accessories`), executing `state.sh` for current state check:
 
 ```
 "accessories":
@@ -138,4 +163,3 @@ Name            | Value         | Required                                    | 
 - The state.sh script in this case would be executed to check current state.  Insure that this script outputs to stdout the matching on value as configured by the on_value config parameter. If the on_value matches the on value output of this script then the accessory will be determined to be on.
 - The configured fileState file is not used in this example. Because it was not configured, the state script is being used.
 - The on_value in this case is used to match against the state script output. If the value matches the output of the state script, the accessory is determined to be on.
-
