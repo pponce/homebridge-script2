@@ -312,25 +312,6 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 - Parent directory permissions are correct
 - No conflicting process recreates/deletes file unexpectedly
 
-## Quick copy/paste checklist
-
-```bash
-# 1) Confirm runtime user
-systemctl cat homebridge | grep -i '^User='
-
-# 2) Ensure script executable
-chmod +x /home/homebridge/scripts/my_script.sh
-
-# 3) Test script exactly as Homebridge user
-sudo -u homebridge /home/homebridge/scripts/my_script.sh
-
-# 4) Check permissions along full path
-namei -l /home/homebridge/scripts/my_script.sh
-
-# 5) Use absolute interpreter path
-which python3
-# then use that full path in script, e.g. /usr/bin/python3
-```
 
 ## Recommended best practices
 
