@@ -173,3 +173,169 @@ Name            | Value         | Required                                    | 
 - The state.sh script in this case would be executed to check current state.  Insure that this script outputs to stdout the matching on value as configured by the on_value config parameter. If the on_value matches the on value output of this script then the accessory will be determined to be on.
 - The configured fileState file is not used in this example. Because it was not configured, the state script is being used.
 - The on_value in this case is used to match against the state script output. If the value matches the output of the state script, the accessory is determined to be on.
+
+## Troubleshooting FAQ
+
+### Why does my script work in terminal but not in Homebridge?
+
+Homebridge runs scripts as the **Homebridge service user**, not your normal shell user.
+A script that works as `pi`, `ubuntu`, or `root` may fail as `homebridge`.
+
+Test your script as the same user that runs Homebridge:
+
+```bash
+sudo -u homebridge /absolute/path/to/script.sh
+```
+
+If your Homebridge service runs as another user, replace `homebridge` with that user.
+
+### How can I confirm which user Homebridge runs as?
+
+On systemd installs:
+
+```bash
+systemctl cat homebridge | grep -i '^User='
+```
+
+If no `User=` is set, check your service/unit setup and logs to determine runtime context.
+
+### Why does Homebridge say it ran the script, but nothing happens?
+
+Most commonly:
+
+1. Wrong permissions (script or directories not executable/readable by Homebridge user)
+2. Wrong working directory
+3. Missing PATH in service environment
+4. Script exits early due to shell/line-ending issues
+
+### Do I need absolute paths?
+
+**Yes, strongly recommended.**
+Do not rely on relative paths, `~`, or shell-specific startup files.
+
+Use absolute paths for:
+- Script files
+- Referenced files/directories
+- Binaries/interpreters (`/usr/bin/python3`, `/usr/bin/node`, etc.)
+
+Example:
+
+```json
+{
+  "on": "/home/homebridge/scripts/light_on.sh",
+  "off": "/home/homebridge/scripts/light_off.sh"
+}
+```
+
+Inside scripts:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd /home/homebridge/scripts || exit 1
+/usr/bin/python3 /home/homebridge/scripts/device_on.py
+```
+
+### How do I verify permissions quickly?
+
+```bash
+chmod +x /home/homebridge/scripts/light_on.sh
+chown homebridge:homebridge /home/homebridge/scripts/light_on.sh
+```
+
+Also make sure the Homebridge user can traverse parent directories (`x` permission on each directory).
+
+Check with:
+
+```bash
+namei -l /home/homebridge/scripts/light_on.sh
+```
+
+### What is the best “same as Homebridge” test command?
+
+Use the exact command from your config as the Homebridge user:
+
+```bash
+sudo -u homebridge /home/homebridge/scripts/light_on.sh
+```
+
+If this fails, Homebridge will fail too.
+
+### How can I collect script debug logs?
+
+Add logging in your script so errors are visible:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+exec >>/tmp/homebridge-script2.log 2>&1
+
+echo "[$(date)] Starting light_on.sh as $(whoami) in $(pwd)"
+/usr/bin/python3 /home/homebridge/scripts/device_on.py
+echo "[$(date)] Done"
+```
+
+Then inspect:
+
+```bash
+tail -n 100 /tmp/homebridge-script2.log
+```
+
+### Could line endings break my script?
+
+Yes. Scripts edited on Windows may have CRLF line endings and fail on Linux.
+
+Convert to LF:
+
+```bash
+dos2unix /home/homebridge/scripts/light_on.sh
+```
+
+### My `state` works but `on`/`off` does not. Why?
+
+This usually means:
+- Status-check command/path is valid
+- Action scripts (`on`/`off`) have permission/path/runtime issues
+
+Validate each action script independently as Homebridge user:
+
+```bash
+sudo -u homebridge /home/homebridge/scripts/light_on.sh
+sudo -u homebridge /home/homebridge/scripts/light_off.sh
+```
+
+### If I use `fileState`, what should I check?
+
+- File path is absolute
+- Homebridge user can create/delete/read that file
+- Parent directory permissions are correct
+- No conflicting process recreates/deletes file unexpectedly
+
+## Quick copy/paste checklist
+
+```bash
+# 1) Confirm runtime user
+systemctl cat homebridge | grep -i '^User='
+
+# 2) Ensure script executable
+chmod +x /home/homebridge/scripts/my_script.sh
+
+# 3) Test script exactly as Homebridge user
+sudo -u homebridge /home/homebridge/scripts/my_script.sh
+
+# 4) Check permissions along full path
+namei -l /home/homebridge/scripts/my_script.sh
+
+# 5) Use absolute interpreter path
+which python3
+# then use that full path in script, e.g. /usr/bin/python3
+```
+
+## Recommended best practices
+
+- Always test as Homebridge user before troubleshooting plugin behavior.
+- Always use absolute paths in config and scripts.
+- Add logging and fail-fast flags (`set -euo pipefail`) in shell scripts.
+- Keep scripts minimal; move complex logic to separate files you can test independently.
+- Restart Homebridge after major script/permission changes to ensure a clean environment.
