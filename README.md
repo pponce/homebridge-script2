@@ -11,6 +11,15 @@ While this fork depends on file-exists there is no need to install it seperately
 
 
 
+
+## Homebridge UI Configuration
+
+This plugin now includes a **Homebridge Config UI X** schema (`config.schema.json`) so you can add and manage `Script2Platform` devices directly from the UI instead of editing raw JSON manually.
+
+- In Homebridge UI, go to **Plugins → homebridge-script2 → Settings**.
+- Use the **Devices** list to add each Script2 switch/accessory and fill in commands/paths.
+- Save and restart Homebridge when prompted.
+
 ## Platform mode
 
 This plugin now supports **both**:
