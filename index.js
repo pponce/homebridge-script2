@@ -153,7 +153,7 @@ Script2DeviceLogic.prototype.shutdown = function () {
 };
 
 Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
-  this.getState((err, poweredOn, stateSource) => {
+  this.getState((err, poweredOn) => {
     if (err) {
       this.log.warn(`Polling state failed for ${this.name}: ${err.message}`);
       return;
@@ -162,9 +162,8 @@ Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switch
     if (this.currentState !== poweredOn) {
       this.currentState = poweredOn;
       switchService.updateCharacteristic(Characteristic.On, poweredOn);
-      this.log.info(`Polled state update for ${this.name}: ${poweredOn ? "ON" : "OFF"} (source: ${stateSource})`);
     }
-  });
+  }, "polling");
 };
 
 Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
@@ -192,13 +191,13 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
   });
 };
 
-Script2DeviceLogic.prototype.getState = function (callback) {
+Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homekit-get") {
   this.log.debug(`Getting ${this.name} state...`);
 
   if (this.fileState) {
     try {
       const poweredOn = fileExists.sync(this.fileState);
-      this.log.info(`Get State of ${this.name} using file flag returned: ${poweredOn ? "ON" : "OFF"} (source: file-state)`);
+      this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: file-state)`);
       callback(null, poweredOn, "file-state");
     } catch (err) {
       this.log.error(`Error checking file state: ${err.message}`);
@@ -221,7 +220,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
       this.lastStateRead !== null &&
       now - this.lastStateReadAt <= this.stateCacheTtlMs
     ) {
-      this.log.info(`State of ${this.name} served from TTL cache is: ${this.lastStateRead ? "ON" : "OFF"} (source: ttl-cache)`);
+      this.log.info(`GetState ${this.name}: ${this.lastStateRead ? "ON" : "OFF"} (path: ${requestPath}, source: ttl-cache)`);
       callback(null, this.lastStateRead, "ttl-cache");
       return;
     }
@@ -234,7 +233,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
           return;
         }
 
-        this.log.info(`State of ${this.name} served from in-flight coalesced read is: ${poweredOn ? "ON" : "OFF"} (source: in-flight-coalesced)`);
+        this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: in-flight-coalesced)`);
         callback(null, poweredOn, "in-flight-coalesced");
       });
       return;
@@ -242,15 +241,6 @@ Script2DeviceLogic.prototype.getState = function (callback) {
 
     this.inFlightStateCallbacks = [callback];
     const command = this.stateCommand;
-    const elapsedSinceLastStateMs = this.lastStateReadAt > 0 ? now - this.lastStateReadAt : null;
-    const ttlOverageMs = elapsedSinceLastStateMs !== null
-      ? Math.max(elapsedSinceLastStateMs - this.stateCacheTtlMs, 0)
-      : null;
-    if (elapsedSinceLastStateMs !== null && ttlOverageMs !== null) {
-      this.log.info(
-        `State of ${this.name} refreshing via state script after ${elapsedSinceLastStateMs}ms since last read (${ttlOverageMs}ms over TTL, source: state-script).`
-      );
-    }
     this.log.debug(`Executing command: ${command}`);
     exec(command, (error, stdout, stderr) => {
       const pendingCallbacks = this.inFlightStateCallbacks || [];
@@ -278,10 +268,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
       }
 
       const poweredOn = cleanCommandOutput == this.onValue;
-      const ttlTimingContext = elapsedSinceLastStateMs !== null && ttlOverageMs !== null
-        ? `, ${elapsedSinceLastStateMs}ms since last read (${ttlOverageMs}ms over TTL)`
-        : "";
-      this.log.info(`State of ${this.name} using state script is: ${poweredOn ? "ON" : "OFF"}${ttlTimingContext} (source: state-script)`);
+      this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: state-script)`);
       this.lastStateRead = poweredOn;
       this.lastStateReadAt = Date.now();
       pendingCallbacks.forEach((cb) => cb(null, poweredOn, "state-script"));
@@ -315,7 +302,7 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
 
   characteristic.removeAllListeners("get");
   if (this.stateCommand || this.fileState) {
-    characteristic.on("get", this.getState.bind(this));
+    characteristic.on("get", (callback) => this.getState(callback, "homekit-get"));
   }
 
   if (this.fileState) {
