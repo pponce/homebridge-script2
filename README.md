@@ -71,6 +71,7 @@ Name            | Value         | Required                                    | 
 ### State script behavior
 - The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
 - If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
+- If using fileState your on and off scripts should create the fileState file and delete the fileState file for homekit to see the changes.
 - If a script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
 - When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
 - Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications to dynamically update homekit status.
