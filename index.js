@@ -198,7 +198,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
   if (this.fileState) {
     try {
       const poweredOn = fileExists.sync(this.fileState);
-      this.log.info(`Get State of ${this.name} using file flag returned: ${poweredOn ? "ON" : "OFF"}`);
+      this.log.info(`Get State of ${this.name} using file flag returned: ${poweredOn ? "ON" : "OFF"} (source: file-state)`);
       callback(null, poweredOn, "file-state");
     } catch (err) {
       this.log.error(`Error checking file state: ${err.message}`);
@@ -221,7 +221,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
       this.lastStateRead !== null &&
       now - this.lastStateReadAt <= this.stateCacheTtlMs
     ) {
-      this.log.debug(`State get for ${this.name} served from TTL cache.`);
+      this.log.info(`State of ${this.name} served from TTL cache is: ${this.lastStateRead ? "ON" : "OFF"} (source: ttl-cache)`);
       callback(null, this.lastStateRead, "ttl-cache");
       return;
     }
@@ -234,6 +234,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
           return;
         }
 
+        this.log.info(`State of ${this.name} served from in-flight coalesced read is: ${poweredOn ? "ON" : "OFF"} (source: in-flight-coalesced)`);
         callback(null, poweredOn, "in-flight-coalesced");
       });
       return;
@@ -241,6 +242,15 @@ Script2DeviceLogic.prototype.getState = function (callback) {
 
     this.inFlightStateCallbacks = [callback];
     const command = this.stateCommand;
+    const elapsedSinceLastStateMs = this.lastStateReadAt > 0 ? now - this.lastStateReadAt : null;
+    const ttlOverageMs = elapsedSinceLastStateMs !== null
+      ? Math.max(elapsedSinceLastStateMs - this.stateCacheTtlMs, 0)
+      : null;
+    if (elapsedSinceLastStateMs !== null && ttlOverageMs !== null) {
+      this.log.info(
+        `State of ${this.name} refreshing via state script after ${elapsedSinceLastStateMs}ms since last read (${ttlOverageMs}ms over TTL, source: state-script).`
+      );
+    }
     this.log.debug(`Executing command: ${command}`);
     exec(command, (error, stdout, stderr) => {
       const pendingCallbacks = this.inFlightStateCallbacks || [];
@@ -268,7 +278,10 @@ Script2DeviceLogic.prototype.getState = function (callback) {
       }
 
       const poweredOn = cleanCommandOutput == this.onValue;
-      this.log.info(`State of ${this.name} using state script is: ${poweredOn ? "ON" : "OFF"}`);
+      const ttlTimingContext = elapsedSinceLastStateMs !== null && ttlOverageMs !== null
+        ? `, ${elapsedSinceLastStateMs}ms since last read (${ttlOverageMs}ms over TTL)`
+        : "";
+      this.log.info(`State of ${this.name} using state script is: ${poweredOn ? "ON" : "OFF"}${ttlTimingContext} (source: state-script)`);
       this.lastStateRead = poweredOn;
       this.lastStateReadAt = Date.now();
       pendingCallbacks.forEach((cb) => cb(null, poweredOn, "state-script"));
