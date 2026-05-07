@@ -75,6 +75,10 @@ When `polling` is enabled, the `state` script is executed on the configured inte
 Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications.
 When `state_cache_ttl_ms` is greater than `0`, `state` reads are cached briefly to prevent duplicate script executions from burst `get` requests.
 If multiple `get` requests arrive while a state command is already running, they are coalesced and share the same in-flight command result.
+Each `getState` request writes a single result log entry in the format `GetState <name>: ON/OFF (path: <homekit-get|polling>, source: <state-script|ttl-cache|in-flight-coalesced|file-state>)`.
+The TTL cache is per-accessory instance (per configured outlet/switch), not global across all accessories.
+At startup with `polling_on_start: true`, the first read for each accessory is a cache miss by design, so one state-script execution per accessory is expected before subsequent reads are served from TTL.
+Also note that `Polled state update ... (source: state-script)` is the poll result log line for that same read, not an additional second state-script execution.
 
 ## Installation
 (Requires node >=6.0.0)
