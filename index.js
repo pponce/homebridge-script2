@@ -314,7 +314,7 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
   if (this.fileState) {
     const fileCreatedHandler = function (path) {
       if (!this.currentState) {
-        this.log.info(`File "${path}" was created`);
+        this.log.debug(`File "${path}" was created`);
         this.currentState = true;
         switchService.setCharacteristic(Characteristic.On, true);
       }
@@ -322,7 +322,7 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
 
     const fileRemovedHandler = function (path) {
       if (this.currentState) {
-        this.log.info(`File "${path}" was deleted`);
+        this.log.debug(`File "${path}" was deleted`);
         this.currentState = false;
         switchService.setCharacteristic(Characteristic.On, false);
       }
