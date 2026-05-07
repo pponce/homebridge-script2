@@ -38,6 +38,7 @@ Name            | Value         | Required                                    | 
 `polling`       | `true/false`  | no (default `false`)                       | Enables periodic polling for `state` command mode only
 `polling_interval` | integer ms | no (default `5000`)                        | Poll interval in milliseconds when `polling` is enabled
 `polling_on_start` | `true/false` | no (default `true`)                     | Immediately run a state poll when Homebridge starts
+`state_cache_ttl_ms` | integer ms | no (default `1000`)                     | Cache TTL for `state` reads to avoid duplicate script executions on burst GET requests
 `unique_serial` | _(custom)_    | no (default set to `"Script2 Serial number"`) | Unique serial per device is recommended
 
 ### Platform configuration example
@@ -58,6 +59,7 @@ Name            | Value         | Required                                    | 
         "polling": false,
         "polling_interval": 5000,
         "polling_on_start": true,
+        "state_cache_ttl_ms": 1000,
         "unique_serial": "platform-1234567"
       }
     ]
@@ -71,6 +73,8 @@ The `state` script output is normalized to lowercase and compared against `on_va
 If the script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
 When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
 Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications.
+When `state_cache_ttl_ms` is greater than `0`, `state` reads are cached briefly to prevent duplicate script executions from burst `get` requests.
+If multiple `get` requests arrive while a state command is already running, they are coalesced and share the same in-flight command result.
 
 ## Installation
 (Requires node >=6.0.0)
@@ -95,6 +99,7 @@ Name            | Value         | Required                                    | 
 `polling`       | `true/false`  | no (default `false`)                         | Enables periodic state checks when using `state` script mode (ignored when `fileState` is configured)
 `polling_interval` | integer ms | no (default `5000`)                          | Poll interval in milliseconds when `polling` is enabled
 `polling_on_start` | `true/false` | no (default `true`)                       | Immediately run a poll on startup before waiting for the interval
+`state_cache_ttl_ms` | integer ms | no (default `1000`)                         | Cache TTL for `state` reads to avoid duplicate script executions on burst GET requests
 `unique_serial` | _(custom)_    | no (default set to "Script2 Serial number") | If you have more than one "accessory" configured, please set unique values for each accessory. Unique values per accessory required for the Eve app.
 
 ## Configuration

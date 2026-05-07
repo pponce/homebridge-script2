@@ -121,10 +121,14 @@ function Script2DeviceLogic(log, config) {
   this.pollingInterval = Number(config["polling_interval"] || 5000);
   this.pollingOnStart =
     config["polling_on_start"] === undefined ? true : !!config["polling_on_start"];
+  this.stateCacheTtlMs = Number(config["state_cache_ttl_ms"] ?? 1000);
   this.uniqueSerial = config["unique_serial"] || "script2 Serial Number";
   this.onValue = this.onValue.trim().toLowerCase();
   this.watcher = null;
   this.pollTimer = null;
+  this.lastStateRead = null;
+  this.lastStateReadAt = 0;
+  this.inFlightStateCallbacks = null;
 
   try {
     this.currentState = this.fileState ? fileExists.sync(this.fileState) : false;
@@ -204,9 +208,36 @@ Script2DeviceLogic.prototype.getState = function (callback) {
   }
 
   if (this.stateCommand) {
+    if (!Number.isFinite(this.stateCacheTtlMs) || this.stateCacheTtlMs < 0) {
+      this.log.warn(
+        `Invalid state_cache_ttl_ms '${this.stateCacheTtlMs}' for ${this.name}; using default 1000ms.`
+      );
+      this.stateCacheTtlMs = 1000;
+    }
+
+    const now = Date.now();
+    if (
+      this.stateCacheTtlMs > 0 &&
+      this.lastStateRead !== null &&
+      now - this.lastStateReadAt <= this.stateCacheTtlMs
+    ) {
+      this.log.debug(`State get for ${this.name} served from TTL cache.`);
+      callback(null, this.lastStateRead);
+      return;
+    }
+
+    if (this.inFlightStateCallbacks) {
+      this.log.debug(`State get for ${this.name} served from in-flight request.`);
+      this.inFlightStateCallbacks.push(callback);
+      return;
+    }
+
+    this.inFlightStateCallbacks = [callback];
     const command = this.stateCommand;
     this.log.debug(`Executing command: ${command}`);
     exec(command, (error, stdout, stderr) => {
+      const pendingCallbacks = this.inFlightStateCallbacks || [];
+      this.inFlightStateCallbacks = null;
       const cleanCommandOutput = stdout.trim().toLowerCase();
       this.log.debug(`Get State Command returned ${cleanCommandOutput}`);
 
@@ -219,7 +250,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
           ? error.message
           : "Get State command returned empty output.";
         this.log.error(`Get State returned an error: ${errMessage}`);
-        callback(new Error(errMessage), null);
+        pendingCallbacks.forEach((cb) => cb(new Error(errMessage), null));
         return;
       }
 
@@ -231,7 +262,9 @@ Script2DeviceLogic.prototype.getState = function (callback) {
 
       const poweredOn = cleanCommandOutput == this.onValue;
       this.log.info(`State of ${this.name} using state script is: ${poweredOn ? "ON" : "OFF"}`);
-      callback(null, poweredOn);
+      this.lastStateRead = poweredOn;
+      this.lastStateReadAt = Date.now();
+      pendingCallbacks.forEach((cb) => cb(null, poweredOn));
     });
     return;
   }
