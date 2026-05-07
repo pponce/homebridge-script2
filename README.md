@@ -11,7 +11,7 @@ While this fork depends on file-exists there is no need to install it seperately
 
 
 
-## Platform mode (beta)
+## Platform mode
 
 This plugin now supports **both**:
 - Legacy accessory mode (backward compatible)
