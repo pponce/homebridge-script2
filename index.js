@@ -153,7 +153,7 @@ Script2DeviceLogic.prototype.shutdown = function () {
 };
 
 Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
-  this.getState((err, poweredOn) => {
+  this.getState((err, poweredOn, stateSource) => {
     if (err) {
       this.log.warn(`Polling state failed for ${this.name}: ${err.message}`);
       return;
@@ -162,7 +162,7 @@ Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switch
     if (this.currentState !== poweredOn) {
       this.currentState = poweredOn;
       switchService.updateCharacteristic(Characteristic.On, poweredOn);
-      this.log.info(`Polled state update for ${this.name}: ${poweredOn ? "ON" : "OFF"}`);
+      this.log.info(`Polled state update for ${this.name}: ${poweredOn ? "ON" : "OFF"} (source: ${stateSource})`);
     }
   });
 };
@@ -199,7 +199,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
     try {
       const poweredOn = fileExists.sync(this.fileState);
       this.log.info(`Get State of ${this.name} using file flag returned: ${poweredOn ? "ON" : "OFF"}`);
-      callback(null, poweredOn);
+      callback(null, poweredOn, "file-state");
     } catch (err) {
       this.log.error(`Error checking file state: ${err.message}`);
       callback(err, null);
@@ -222,13 +222,20 @@ Script2DeviceLogic.prototype.getState = function (callback) {
       now - this.lastStateReadAt <= this.stateCacheTtlMs
     ) {
       this.log.debug(`State get for ${this.name} served from TTL cache.`);
-      callback(null, this.lastStateRead);
+      callback(null, this.lastStateRead, "ttl-cache");
       return;
     }
 
     if (this.inFlightStateCallbacks) {
       this.log.debug(`State get for ${this.name} served from in-flight request.`);
-      this.inFlightStateCallbacks.push(callback);
+      this.inFlightStateCallbacks.push((err, poweredOn, source) => {
+        if (err) {
+          callback(err, null, source);
+          return;
+        }
+
+        callback(null, poweredOn, "in-flight-coalesced");
+      });
       return;
     }
 
@@ -264,7 +271,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
       this.log.info(`State of ${this.name} using state script is: ${poweredOn ? "ON" : "OFF"}`);
       this.lastStateRead = poweredOn;
       this.lastStateReadAt = Date.now();
-      pendingCallbacks.forEach((cb) => cb(null, poweredOn));
+      pendingCallbacks.forEach((cb) => cb(null, poweredOn, "state-script"));
     });
     return;
   }
