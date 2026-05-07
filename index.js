@@ -2,7 +2,7 @@ let Service;
 let Characteristic;
 
 const exec = require("child_process").exec;
-const fileExists = require("file-exists");
+const { existsSync } = require("fs");
 const chokidar = require("chokidar");
 
 const PLUGIN_NAME = "homebridge-script2";
@@ -137,7 +137,7 @@ function Script2DeviceLogic(log, config) {
   }
 
   try {
-    this.currentState = this.fileState ? fileExists.sync(this.fileState) : false;
+    this.currentState = this.fileState ? existsSync(this.fileState) : false;
   } catch (err) {
     this.log.error(`Error checking initial file state: ${err.message}`);
     this.currentState = false;
@@ -202,7 +202,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
 
   if (this.fileState) {
     try {
-      const poweredOn = fileExists.sync(this.fileState);
+      const poweredOn = existsSync(this.fileState);
       this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: file-state)`);
       callback(null, poweredOn, "file-state");
     } catch (err) {
