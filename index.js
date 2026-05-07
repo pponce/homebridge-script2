@@ -164,7 +164,7 @@ Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switch
 };
 
 Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
-  this.log.info(`Setting ${this.name} to ${powerOn ? "ON" : "OFF"}...`);
+  this.log.debug(`Setting ${this.name} to ${powerOn ? "ON" : "OFF"}...`);
 
   const command = powerOn ? this.onCommand : this.offCommand;
   this.log.debug(`Executing command: ${command}`);
@@ -189,12 +189,12 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
 };
 
 Script2DeviceLogic.prototype.getState = function (callback) {
-  this.log.info(`Getting ${this.name} state...`);
+  this.log.debug(`Getting ${this.name} state...`);
 
   if (this.fileState) {
     try {
       const poweredOn = fileExists.sync(this.fileState);
-      this.log.info(`State of ${this.name} is: ${poweredOn ? "ON" : "OFF"}`);
+      this.log.info(`Get State of ${this.name} using file flag returned: ${poweredOn ? "ON" : "OFF"}`);
       callback(null, poweredOn);
     } catch (err) {
       this.log.error(`Error checking file state: ${err.message}`);
@@ -230,7 +230,7 @@ Script2DeviceLogic.prototype.getState = function (callback) {
       }
 
       const poweredOn = cleanCommandOutput == this.onValue;
-      this.log.info(`State of ${this.name} is: ${poweredOn ? "ON" : "OFF"}`);
+      this.log.info(`State of ${this.name} using state script is: ${poweredOn ? "ON" : "OFF"}`);
       callback(null, poweredOn);
     });
     return;
