@@ -70,6 +70,7 @@ Name            | Value         | Required                                    | 
 
 ### State script behavior
 The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
+If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
 If the script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
 When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
 Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications.
@@ -88,7 +89,13 @@ At startup with `polling_on_start: true`, the first read for each accessory is a
 4. Make sure scripts have been made executable (chmod +x scriptname.sh) and also accessible by the homebridge user. 
 
 
-Homebridge-script configuration parameters
+## Legacy accessory mode (still supported)
+
+Legacy `accessories` mode remains supported for backward compatibility.
+For new installs, platform mode is recommended.
+If you migrate from legacy accessory mode to platform mode, remove the old accessory setup and start fresh with a new `platforms` configuration.
+
+### Legacy accessory configuration parameters
 
 Name            | Value         | Required                                    | Notes
 --------------- | ------------- | ------------------------------------------- | -------------
@@ -105,9 +112,7 @@ Name            | Value         | Required                                    | 
 `state_cache_ttl_ms` | integer ms | no (default `1000`)                         | Cache TTL for `state` reads to avoid duplicate script executions on burst GET requests
 `unique_serial` | _(custom)_    | no (default set to "Script2 Serial number") | If you have more than one "accessory" configured, please set unique values for each accessory. Unique values per accessory required for the Eve app.
 
-## Configuration
-
-### Configuration example 1, using filestate for current state check:
+### Legacy configuration example 1 (`accessories`), using `fileState` for current state check:
 
 ```
 "accessories":
@@ -131,9 +136,10 @@ Name            | Value         | Required                                    | 
 - The off.sh script executes when you turn off the accessory via a homekit app. ( In this case we are using existence of a file to determine on or off current state, insure the off.sh script deletes the configured fileState file.)
 - The state.sh script in this case would not execute as fileState parameter overrides its use.
 - The configured fileState file is used as a flag. When the homekit app checks for current state it checks for the existence of this file. If it exists, current state is on. If it does not exist, current state is off.
+- HomeKit status updates are dynamic when using `fileState`: state changes are reflected as soon as the configured file is created or deleted.
 - The on_value in this case is not being used as it is only used when the state script is used to check for current state.
 
-### Configuration example 2, executing state.sh script for current state check:
+### Legacy configuration example 2 (`accessories`), executing `state.sh` for current state check:
 
 ```
 "accessories":

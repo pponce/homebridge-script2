@@ -130,6 +130,12 @@ function Script2DeviceLogic(log, config) {
   this.lastStateReadAt = 0;
   this.inFlightStateCallbacks = null;
 
+  if (this.fileState && this.stateCommand) {
+    this.log.warn(
+      `${this.name}: both 'fileState' and 'state' are configured. The state script will not be executed for status changes; the configured file flag will be used instead. To use the state script, remove the 'fileState' config parameter.`
+    );
+  }
+
   try {
     this.currentState = this.fileState ? fileExists.sync(this.fileState) : false;
   } catch (err) {
