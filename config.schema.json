@@ -1,0 +1,93 @@
+{
+  "pluginAlias": "Script2",
+  "pluginType": "both",
+  "singular": true,
+  "headerDisplay": "## homebridge-script2\nConfigure Script2 in Homebridge UI without editing JSON manually.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Platform Name",
+        "type": "string",
+        "default": "Script2",
+        "required": true,
+        "description": "Display name for this platform instance in Homebridge."
+      },
+      "devices": {
+        "title": "Devices",
+        "type": "array",
+        "description": "Define one or more Script2 accessories managed by this platform.",
+        "items": {
+          "title": "Device",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Accessory Name",
+              "type": "string",
+              "required": true
+            },
+            "on": {
+              "title": "ON Command",
+              "type": "string",
+              "required": true,
+              "placeholder": "/var/homebridge/scripts/on.sh 1"
+            },
+            "off": {
+              "title": "OFF Command",
+              "type": "string",
+              "required": true,
+              "placeholder": "/var/homebridge/scripts/off.sh 1"
+            },
+            "fileState": {
+              "title": "State File Path",
+              "type": "string",
+              "description": "If set, the on/off state is based on file existence and overrides state command.",
+              "placeholder": "/var/homebridge/scripts/device1.flag"
+            },
+            "state": {
+              "title": "State Command",
+              "type": "string",
+              "description": "Command that prints current state (for example: true/false)."
+            },
+            "on_value": {
+              "title": "ON Match Value",
+              "type": "string",
+              "default": "true",
+              "description": "State command output value interpreted as ON."
+            },
+            "polling": {
+              "title": "Enable Polling",
+              "type": "boolean",
+              "default": false,
+              "description": "Poll state command periodically (ignored when State File Path is set)."
+            },
+            "polling_interval": {
+              "title": "Polling Interval (ms)",
+              "type": "integer",
+              "default": 5000,
+              "minimum": 250
+            },
+            "polling_on_start": {
+              "title": "Poll Immediately on Startup",
+              "type": "boolean",
+              "default": true
+            },
+            "state_cache_ttl_ms": {
+              "title": "State Cache TTL (ms)",
+              "type": "integer",
+              "default": 1000,
+              "minimum": 0,
+              "description": "Short cache for burst reads to avoid duplicate command execution."
+            },
+            "unique_serial": {
+              "title": "Unique Serial",
+              "type": "string",
+              "default": "script2 Serial Number",
+              "description": "Recommended unique serial per device for HomeKit apps."
+            }
+          }
+        }
+      }
+    }
+  }
+}
