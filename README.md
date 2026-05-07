@@ -81,7 +81,7 @@ Name            | Value         | Required                                    | 
 - At startup with `polling_on_start: true`, the first read for each accessory is a cache miss by design, so one state-script execution per accessory is expected before subsequent reads are served from TTL.
 
 ## Installation
-(Requires node >=6.0.0)
+(Requires Node.js >=20.19.0)
 
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-script2`
