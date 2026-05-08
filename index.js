@@ -122,6 +122,7 @@ function Script2DeviceLogic(log, config) {
   this.pollingOnStart =
     config["polling_on_start"] === undefined ? true : !!config["polling_on_start"];
   this.stateCacheTtlMs = Number(config["state_cache_ttl_ms"] ?? 1000);
+  this.resetStateCacheOnSet = config["reset_state_cache_on_set"] === true;
   this.uniqueSerial = config["unique_serial"] || "script2 Serial Number";
   this.onValue = this.onValue.trim().toLowerCase();
   this.watcher = null;
@@ -191,6 +192,13 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
     this.log.debug(`Set State Command returned ${commandOutput}`);
 
     this.currentState = powerOn;
+    if (this.resetStateCacheOnSet && this.stateCommand && !this.fileState) {
+      this.lastStateRead = powerOn;
+      this.lastStateReadAt = Date.now();
+      this.log.debug(
+        `Reset state cache for ${this.name} from manual set action to ${powerOn ? "ON" : "OFF"}.`
+      );
+    }
     this.log.info(`Set ${this.name} to ${powerOn ? "ON" : "OFF"}`);
 
     callback(null, powerOn);

@@ -79,6 +79,12 @@
               "minimum": 0,
               "description": "Short cache for burst reads to avoid duplicate command execution."
             },
+            "reset_state_cache_on_set": {
+              "title": "Reset State Cache on Manual Set",
+              "type": "boolean",
+              "default": false,
+              "description": "When enabled, successful HomeKit ON/OFF actions reset the state cache TTL to the newly set state."
+            },
             "unique_serial": {
               "title": "Unique Serial",
               "type": "string",
