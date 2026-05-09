@@ -8,9 +8,9 @@ Original plugin [homebridge-script](https://github.com/xxcombat/homebridge-scrip
 
 ## Homebridge UI Configuration
 
-This plugin now includes a **Homebridge Config UI X** schema (`config.schema.json`) so you can add and manage `Script2Platform` devices directly from the UI instead of editing raw JSON manually.
+This plugin now includes a **Homebridge Config UI X** schema (`config.schema.json`) so you can add and manage `Script2Platform` devices directly from the UI instead of editing raw JSON manually. See below about upgrading to platform mode. Only use the user friendly Plugin Config UI X option if using the dynamic platform mode.
 
-- In Homebridge UI, go to **Plugins → homebridge-script2 → Settings**.
+- In Homebridge UI, go to **Plugins → homebridge-script2 → Plugin Config**.
 - Use the **Devices** list to add each Script2 switch/accessory and fill in commands/paths.
 - Save and restart Homebridge when prompted.
 
@@ -20,7 +20,7 @@ This plugin runtime supports **both**:
 - Legacy accessory mode (backward compatible in manual JSON)
 - New dynamic platform mode (`Script2Platform`)
 
-Homebridge Config UI schema is now **platform-only** (dynamic platform) for reliable rich editing in UI.
+Homebridge Config UI schema is **platform-only** (dynamic platform) for reliable rich editing via the UI.
 
 ### Backward compatibility
 - Existing accessory-based setups remain supported and unchanged.
