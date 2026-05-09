@@ -1,6 +1,6 @@
 {
   "name": "homebridge-script2",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "license": "MIT",
   "description": "script plugin for homebridge: https://github.com/nfarina/homebridge",
   "keywords": [
