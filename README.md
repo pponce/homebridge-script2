@@ -16,9 +16,11 @@ This plugin now includes a **Homebridge Config UI X** schema (`config.schema.jso
 
 ## Platform mode
 
-This plugin now supports **both**:
-- Legacy accessory mode (backward compatible)
+This plugin runtime supports **both**:
+- Legacy accessory mode (backward compatible in manual JSON)
 - New dynamic platform mode (`Script2Platform`)
+
+Homebridge Config UI schema is now **platform-only** (dynamic platform) for reliable rich editing in UI.
 
 ### Backward compatibility
 - Existing accessory-based setups remain supported and unchanged.
@@ -72,6 +74,8 @@ Name            | Value         | Required                                    | 
 ]
 ```
 
+Type note: use JSON booleans for `polling` (for example `"polling": true`), not strings like `"polling": "true"`.
+
 
 ### State script behavior
 - The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
@@ -99,7 +103,8 @@ Name            | Value         | Required                                    | 
 ## Legacy accessory mode (still supported)
 
 Legacy `accessories` mode remains supported for backward compatibility.
-For new installs, platform mode is recommended.
+For new installs, platform mode is recommended and fully supported in Homebridge Config UI rich editing.
+Legacy accessory mode remains available as runtime backward compatibility for existing manual JSON configs.
 If you migrate from legacy accessory mode to platform mode, remove the old accessory setup and start fresh with a new `platforms` configuration.
 
 ### Legacy accessory configuration parameters

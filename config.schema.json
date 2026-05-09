@@ -1,6 +1,6 @@
 {
-  "pluginAlias": "Script2",
-  "pluginType": "both",
+  "pluginAlias": "Script2Platform",
+  "pluginType": "platform",
   "singular": true,
   "headerDisplay": "## homebridge-script2\nConfigure Script2 in Homebridge UI without editing JSON manually.",
   "schema": {
