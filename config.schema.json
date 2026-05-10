@@ -92,6 +92,12 @@
               "default": false,
               "description": "When enabled, successful HomeKit ON/OFF actions reset the state cache TTL to the newly set state."
             },
+            "fail_on_state_exit_code": {
+              "title": "Fail on Non-zero State Exit Code",
+              "type": "boolean",
+              "default": false,
+              "description": "When enabled, a non-zero exit code from the state command is treated as an error and the accessory is marked with a fault until reads recover."
+            },
             "unique_serial": {
               "title": "Unique Serial",
               "type": "string",
