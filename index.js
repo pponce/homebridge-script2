@@ -123,6 +123,7 @@ function Script2DeviceLogic(log, config) {
     config["polling_on_start"] === undefined ? true : !!config["polling_on_start"];
   this.stateCacheTtlMs = Number(config["state_cache_ttl_ms"] ?? 1000);
   this.resetStateCacheOnSet = config["reset_state_cache_on_set"] === true;
+  this.failOnStateExitCode = config["fail_on_state_exit_code"] === true;
   this.uniqueSerial = config["unique_serial"] || "script2 Serial Number";
   this.onValue = this.onValue.trim().toLowerCase();
   this.watcher = null;
@@ -130,6 +131,7 @@ function Script2DeviceLogic(log, config) {
   this.lastStateRead = null;
   this.lastStateReadAt = 0;
   this.inFlightStateCallbacks = null;
+  this.switchService = null;
 
   if (this.fileState && this.stateCommand) {
     this.log.warn(
@@ -162,10 +164,12 @@ Script2DeviceLogic.prototype.shutdown = function () {
 Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
   this.getState((err, poweredOn) => {
     if (err) {
+      this.updateReachabilityFault(true);
       this.log.warn(`Polling state failed for ${this.name}: ${err.message}`);
       return;
     }
 
+    this.updateReachabilityFault(false);
     if (this.currentState !== poweredOn) {
       this.currentState = poweredOn;
       switchService.updateCharacteristic(Characteristic.On, poweredOn);
@@ -212,9 +216,11 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
     try {
       const poweredOn = existsSync(this.fileState);
       this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: file-state)`);
+      this.updateReachabilityFault(false);
       callback(null, poweredOn, "file-state");
     } catch (err) {
       this.log.error(`Error checking file state: ${err.message}`);
+      this.updateReachabilityFault(true);
       callback(err, null);
     }
     return;
@@ -235,6 +241,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
       now - this.lastStateReadAt <= this.stateCacheTtlMs
     ) {
       this.log.info(`GetState ${this.name}: ${this.lastStateRead ? "ON" : "OFF"} (path: ${requestPath}, source: ttl-cache)`);
+      this.updateReachabilityFault(false);
       callback(null, this.lastStateRead, "ttl-cache");
       return;
     }
@@ -243,11 +250,13 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
       this.log.debug(`State get for ${this.name} served from in-flight request.`);
       this.inFlightStateCallbacks.push((err, poweredOn, source) => {
         if (err) {
+          this.updateReachabilityFault(true);
           callback(err, null, source);
           return;
         }
 
         this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: in-flight-coalesced)`);
+        this.updateReachabilityFault(false);
         callback(null, poweredOn, "in-flight-coalesced");
       });
       return;
@@ -271,11 +280,19 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
           ? error.message
           : "Get State command returned empty output.";
         this.log.error(`Get State returned an error: ${errMessage}`);
+        this.updateReachabilityFault(true);
         pendingCallbacks.forEach((cb) => cb(new Error(errMessage), null));
         return;
       }
 
       if (error) {
+        if (this.failOnStateExitCode) {
+          const errMessage = `Get State command exited non-zero (${error.code ?? "unknown"}): ${error.message}`;
+          this.log.error(errMessage);
+          this.updateReachabilityFault(true);
+          pendingCallbacks.forEach((cb) => cb(new Error(errMessage), null));
+          return;
+        }
         this.log.warn(
           `Get State command exited non-zero (${error.code ?? "unknown"}) but returned stdout; using stdout for state.`
         );
@@ -283,6 +300,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
 
       const poweredOn = cleanCommandOutput == this.onValue;
       this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: state-script)`);
+      this.updateReachabilityFault(false);
       this.lastStateRead = poweredOn;
       this.lastStateReadAt = Date.now();
       pendingCallbacks.forEach((cb) => cb(null, poweredOn, "state-script"));
@@ -302,6 +320,7 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
   const switchService =
     platformAccessory.getService(Service.Switch) ||
     platformAccessory.addService(Service.Switch, this.name);
+  this.switchService = switchService;
 
   const theSerial = this.uniqueSerial.toString();
 
@@ -358,6 +377,17 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
       this.pollStateAndUpdateCharacteristic(switchService);
     }, this.pollingInterval);
   }
+};
+
+Script2DeviceLogic.prototype.updateReachabilityFault = function (hasFault) {
+  if (!this.switchService) {
+    return;
+  }
+
+  this.switchService.updateCharacteristic(
+    Characteristic.StatusFault,
+    hasFault ? Characteristic.StatusFault.GENERAL_FAULT : Characteristic.StatusFault.NO_FAULT
+  );
 };
 
 Script2DeviceLogic.prototype.buildServices = function () {
