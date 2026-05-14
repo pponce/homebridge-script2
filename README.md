@@ -45,7 +45,7 @@ Name            | Value         | Required                                    | 
 `polling_on_start` | `true/false` | no (default `true`)                     | Immediately run a state poll when Homebridge starts
 `state_cache_ttl_ms` | integer ms | no (default `1000`)                     | Cache TTL for `state` reads to avoid duplicate script executions on burst GET requests
 `reset_state_cache_on_set` | `true/false` | no (default `false`)               | When enabled, successful manual ON/OFF actions reset the state cache timer and seed it with the set state
-`fail_on_state_exit_code` | `true/false` | no (default `false`)               | When enabled, non-zero exit code from the `state` command is treated as an error and the accessory is marked with a fault
+`fail_on_state_exit_code` | `true/false` | no (default `false`)               | When enabled, non-zero exit code from the `state` command is treated as an error for that read request
 `unique_serial` | _(custom)_    | no (default set to `"Script2 Serial number"`) | Unique serial per device is recommended
 
 ### Platform configuration example
@@ -83,11 +83,11 @@ Type note: use JSON booleans for `polling` (for example `"polling": true`), not 
 - The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
 - If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
 - If using fileState your on and off scripts should create the fileState file and delete the fileState file for homekit to see the changes.
-- If a script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
+- If a script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state and log a warning with exit/stderr details.
 - To keep this behavior as default, `fail_on_state_exit_code` is `false` by default. Set it to `true` to treat non-zero state script exit codes as errors.
-- When `fail_on_state_exit_code` is enabled and the state script exits non-zero, the get request returns an error and the accessory is marked with a HomeKit fault (unreachable/problem state) until state reads succeed again.
-- `fileState` checks also participate in fault reporting: if reading the configured path throws an error, the accessory is marked with a HomeKit fault (unreachable/problem state) until reads succeed again.
-- On successful `fileState` or `state` reads, the HomeKit fault is cleared automatically.
+- When `fail_on_state_exit_code` is enabled and the state script exits non-zero, the get request returns an error for that read request. In Home app this may appear as a temporary "No Response" / unavailable read when HomeKit requests state.
+- `fileState` checks also return read errors if checking the configured path throws.
+- This plugin does not attach HomeKit `StatusFault` to `Switch` services, which avoids unsupported-characteristic warnings in Homebridge logs.
 - When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
 - Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications to dynamically update homekit status.
 - When `state_cache_ttl_ms` is greater than `0`, `state` reads are cached briefly to prevent duplicate script executions from burst `get` requests.
