@@ -147,6 +147,22 @@ function Script2DeviceLogic(log, config) {
   }
 }
 
+Script2DeviceLogic.prototype.formatCommandDiagnostics = function (
+  action,
+  command,
+  error,
+  stdout,
+  stderr
+) {
+  const exitCode = error?.code ?? 0;
+  const signal = error?.signal ? `, signal=${error.signal}` : "";
+  const errorMessage = error?.message ?? "none";
+  const trimmedStdout = (stdout ?? "").trim();
+  const trimmedStderr = (stderr ?? "").trim();
+
+  return `${this.name} ${action} command diagnostics: exitCode=${exitCode}${signal}, errorMessage="${errorMessage}", stdout="${trimmedStdout}", stderr="${trimmedStderr}", command="${command}"`;
+};
+
 Script2DeviceLogic.prototype.shutdown = function () {
   if (this.pollTimer) {
     clearInterval(this.pollTimer);
@@ -162,11 +178,15 @@ Script2DeviceLogic.prototype.shutdown = function () {
 };
 
 Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
-  this.getState((err, poweredOn) => {
+  this.getState((err, poweredOn, source, nonFatalError) => {
     if (err) {
       this.updateReachabilityFault(true);
       this.log.warn(`Polling state failed for ${this.name}: ${err.message}`);
       return;
+    }
+
+    if (nonFatalError) {
+      this.log.warn(`Polling state warning for ${this.name}: ${nonFatalError.message}`);
     }
 
     this.updateReachabilityFault(false);
@@ -181,12 +201,12 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
   this.log.debug(`Setting ${this.name} to ${powerOn ? "ON" : "OFF"}...`);
 
   const command = powerOn ? this.onCommand : this.offCommand;
+  const action = powerOn ? "on" : "off";
   this.log.debug(`Executing command: ${command}`);
   exec(command, (error, stdout, stderr) => {
     if (error || stderr) {
-      const errMessage = stderr
-        ? `${stderr} (${error?.message ?? "unknown error"})`
-        : `${error?.message ?? "unknown error"}`;
+      const diagnostics = this.formatCommandDiagnostics(action, command, error, stdout, stderr);
+      const errMessage = `Set State returned an error. ${diagnostics}`;
       this.log.error(`Set State returned an error: ${errMessage}`);
       callback(new Error(errMessage), null);
       return;
@@ -276,8 +296,9 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
       }
 
       if (!cleanCommandOutput) {
+        const diagnostics = this.formatCommandDiagnostics("state", command, error, stdout, stderr);
         const errMessage = error
-          ? error.message
+          ? `Get State command returned empty output. ${diagnostics}`
           : "Get State command returned empty output.";
         this.log.error(`Get State returned an error: ${errMessage}`);
         this.updateReachabilityFault(true);
@@ -285,17 +306,20 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
         return;
       }
 
+      let nonFatalStateError = null;
       if (error) {
         if (this.failOnStateExitCode) {
-          const errMessage = `Get State command exited non-zero (${error.code ?? "unknown"}): ${error.message}`;
+          const diagnostics = this.formatCommandDiagnostics("state", command, error, stdout, stderr);
+          const errMessage = `Get State command exited non-zero and fail_on_state_exit_code is enabled. ${diagnostics}`;
           this.log.error(errMessage);
           this.updateReachabilityFault(true);
           pendingCallbacks.forEach((cb) => cb(new Error(errMessage), null));
           return;
         }
-        this.log.warn(
-          `Get State command exited non-zero (${error.code ?? "unknown"}) but returned stdout; using stdout for state.`
-        );
+        const diagnostics = this.formatCommandDiagnostics("state", command, error, stdout, stderr);
+        const errMessage = `Get State command exited non-zero but returned stdout; using stdout for state. ${diagnostics}`;
+        nonFatalStateError = new Error(errMessage);
+        this.log.warn(errMessage);
       }
 
       const poweredOn = cleanCommandOutput == this.onValue;
@@ -303,7 +327,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
       this.updateReachabilityFault(false);
       this.lastStateRead = poweredOn;
       this.lastStateReadAt = Date.now();
-      pendingCallbacks.forEach((cb) => cb(null, poweredOn, "state-script"));
+      pendingCallbacks.forEach((cb) => cb(null, poweredOn, "state-script", nonFatalStateError));
     });
     return;
   }
@@ -380,14 +404,12 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
 };
 
 Script2DeviceLogic.prototype.updateReachabilityFault = function (hasFault) {
-  if (!this.switchService) {
-    return;
-  }
-
-  this.switchService.updateCharacteristic(
-    Characteristic.StatusFault,
-    hasFault ? Characteristic.StatusFault.GENERAL_FAULT : Characteristic.StatusFault.NO_FAULT
-  );
+  // Intentionally no-op for Switch accessories.
+  // HomeKit does not define StatusFault as a supported characteristic for Service.Switch,
+  // so writing it causes Homebridge to log warnings.
+  // State-read errors are still propagated through callback errors and can surface to clients
+  // as transient read failures (for example temporary "No Response" moments).
+  void hasFault;
 };
 
 Script2DeviceLogic.prototype.buildServices = function () {
