@@ -88,6 +88,10 @@ Type note: use JSON booleans for `polling` (for example `"polling": true`), not 
 - When `fail_on_state_exit_code` is enabled and the state script exits non-zero, the get request returns an error for that read request. In Home app this may appear as a temporary "No Response" / unavailable read when HomeKit requests state.
 - `fileState` checks also return read errors if checking the configured path throws.
 - This plugin does not attach HomeKit `StatusFault` to `Switch` services, which avoids unsupported-characteristic warnings in Homebridge logs.
+- Script best practice:
+  - Print only the state token (for example `true` or `false`) to `stdout`.
+  - Print diagnostics/errors to `stderr`.
+  - Use non-zero exit codes to indicate failures; the plugin logs detailed diagnostics with device name, action (`state`/`on`/`off`), exit code, stdout, stderr, and error message.
 - When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
 - Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications to dynamically update homekit status.
 - When `state_cache_ttl_ms` is greater than `0`, `state` reads are cached briefly to prevent duplicate script executions from burst `get` requests.
