@@ -177,6 +177,16 @@ Script2DeviceLogic.prototype.shutdown = function () {
   }
 };
 
+Script2DeviceLogic.prototype.logGetStateResult = function (poweredOn, requestPath, source, nonZeroExit) {
+  const message = `GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: ${source})`;
+  if (nonZeroExit) {
+    this.log.info(message);
+    return;
+  }
+
+  this.log.debug(message);
+};
+
 Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
   this.getState((err, poweredOn, source, nonFatalError) => {
     if (err) {
@@ -235,7 +245,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
   if (this.fileState) {
     try {
       const poweredOn = existsSync(this.fileState);
-      this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: file-state)`);
+      this.logGetStateResult(poweredOn, requestPath, "file-state", false);
       this.updateReachabilityFault(false);
       callback(null, poweredOn, "file-state");
     } catch (err) {
@@ -260,7 +270,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
       this.lastStateRead !== null &&
       now - this.lastStateReadAt <= this.stateCacheTtlMs
     ) {
-      this.log.info(`GetState ${this.name}: ${this.lastStateRead ? "ON" : "OFF"} (path: ${requestPath}, source: ttl-cache)`);
+      this.logGetStateResult(this.lastStateRead, requestPath, "ttl-cache", false);
       this.updateReachabilityFault(false);
       callback(null, this.lastStateRead, "ttl-cache");
       return;
@@ -275,7 +285,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
           return;
         }
 
-        this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: in-flight-coalesced)`);
+        this.logGetStateResult(poweredOn, requestPath, "in-flight-coalesced", false);
         this.updateReachabilityFault(false);
         callback(null, poweredOn, "in-flight-coalesced");
       });
@@ -323,7 +333,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
       }
 
       const poweredOn = cleanCommandOutput == this.onValue;
-      this.log.info(`GetState ${this.name}: ${poweredOn ? "ON" : "OFF"} (path: ${requestPath}, source: state-script)`);
+      this.logGetStateResult(poweredOn, requestPath, "state-script", !!nonFatalStateError);
       this.updateReachabilityFault(false);
       this.lastStateRead = poweredOn;
       this.lastStateReadAt = Date.now();
