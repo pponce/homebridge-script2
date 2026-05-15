@@ -37,6 +37,11 @@ Name            | Value         | Required                                    | 
 `name`          | _(custom)_    | yes                                         | Name of accessory that will appear in Home app and is required
 `on`            | _(custom)_    | yes                                         | Script/command to execute the on action
 `off`           | _(custom)_    | yes                                         | Script/command to execute the off action
+
+`device_type`  | `switch/stateless` | no (default `switch`)            | `switch` = normal ON/OFF behavior, `stateless` = single-action trigger
+`trigger`      | _(custom)_         | required for `stateless` devices | Script/command to execute when stateless trigger is pressed
+`auto_reset_ms`| integer ms         | no (default `500`)               | Delay before stateless trigger resets to its default state in Home app
+`stateless_trigger_on` | `on/off` | no (default `on`) | Stateless trigger edge: `on` triggers when toggled ON; `off` triggers when toggled OFF and defaults tile to ON
 `fileState`     | _(custom)_    | fileState or state is required (see note)   | File used as current state flag
 `state`         | _(custom)_    | fileState or state is required (see note)   | Script to determine current state
 `on_value`      | _(custom)_    | no* (default set to `"true"`)             | Value matched against `state` command output
@@ -103,6 +108,27 @@ Type note: use JSON booleans for `polling` (for example `"polling": true`), not 
   - Path indicates if the read came from a HomeKit get or polling; source indicates where the value came from.
 - The TTL cache is per-accessory instance (per configured outlet/switch), not global across all accessories.
 - At startup with `polling_on_start: true`, the first read for each accessory is a cache miss by design, so one state-script execution per accessory is expected before subsequent reads are served from TTL.
+
+
+### Stateless trigger mode
+- Set `device_type` to `stateless` to create a single-action trigger accessory suitable for actions like outlet reboot.
+- In stateless mode, `trigger` runs on the configured edge via `stateless_trigger_on` (`on` by default).
+- `stateless_trigger_on: "on"`: press ON to trigger, then auto-reset to OFF.
+- `stateless_trigger_on: "off"`: press OFF to trigger, then auto-reset to ON (default tile state is ON).
+- Stateful options (`state`, `fileState`, `polling`, `on_value`) are ignored for stateless devices.
+
+Example:
+
+```json
+{
+  "name": "RPC3 Outlet 1 Reboot",
+  "device_type": "stateless",
+  "trigger": "/var/homebridge/rpc3control/reboot.sh 1",
+  "auto_reset_ms": 500,
+  "stateless_trigger_on": "off",
+  "unique_serial": "rpc3-outlet1-reboot"
+}
+```
 
 ## Installation
 (Requires Node.js >=20.19.0)
