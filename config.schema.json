@@ -23,7 +23,7 @@
       "devices": {
         "title": "Devices",
         "type": "array",
-        "description": "Define one or more Script2 accessories managed by this platform.",
+        "description": "Legacy mixed devices list (deprecated; kept for backward compatibility).",
         "items": {
           "title": "Device",
           "type": "object",
@@ -282,7 +282,306 @@
             "name",
             "device_type"
           ]
-        }
+        },
+        "expandable": true,
+        "expanded": false
+      },
+      "stateful_devices": {
+        "title": "Stateful Switches (ON/OFF)",
+        "type": "array",
+        "description": "Recommended: configure standard ON/OFF switches here.",
+        "items": {
+          "title": "Device",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Accessory Name",
+              "type": "string",
+              "required": true
+            },
+            "on": {
+              "title": "ON Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/on.sh 1"
+            },
+            "off": {
+              "title": "OFF Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/off.sh 1"
+            },
+            "fileState": {
+              "title": "State File Path",
+              "type": "string",
+              "description": "If set, the on/off state is based on file existence and overrides state command.",
+              "placeholder": "/var/homebridge/scripts/device1.flag"
+            },
+            "state": {
+              "title": "State Command",
+              "type": "string",
+              "description": "Command that prints current state (for example: true/false)."
+            },
+            "on_value": {
+              "title": "ON Match Value",
+              "type": "string",
+              "default": "true",
+              "description": "State command output value interpreted as ON."
+            },
+            "polling": {
+              "title": "Enable Polling",
+              "type": "boolean",
+              "default": false,
+              "description": "Poll state command periodically (ignored when State File Path is set)."
+            },
+            "polling_interval": {
+              "title": "Polling Interval (ms)",
+              "type": "integer",
+              "default": 5000,
+              "minimum": 250
+            },
+            "polling_on_start": {
+              "title": "Poll Immediately on Startup",
+              "type": "boolean",
+              "default": true
+            },
+            "state_cache_ttl_ms": {
+              "title": "State Cache TTL (ms)",
+              "type": "integer",
+              "default": 1000,
+              "minimum": 0,
+              "description": "Short cache for burst reads to avoid duplicate command execution."
+            },
+            "reset_state_cache_on_set": {
+              "title": "Reset State Cache on Manual Set",
+              "type": "boolean",
+              "default": false,
+              "description": "When enabled, successful HomeKit ON/OFF actions reset the state cache TTL to the newly set state."
+            },
+            "fail_on_state_exit_code": {
+              "title": "Fail on Non-zero State Exit Code",
+              "type": "boolean",
+              "default": false,
+              "description": "When enabled, a non-zero exit code from the state command is treated as an error and the accessory is marked with a fault until reads recover."
+            },
+            "trigger": {
+              "title": "Trigger Command (stateless)",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/reboot.sh 1",
+              "description": "Command executed when a stateless trigger is pressed."
+            },
+            "auto_reset_ms": {
+              "title": "Auto Reset Delay (ms)",
+              "type": "integer",
+              "default": 500,
+              "minimum": 0,
+              "description": "For stateless triggers, delay before the switch resets back to its default tile state in Home app."
+            },
+            "stateless_trigger_on": {
+              "title": "Stateless Trigger On",
+              "type": "string",
+              "default": "on",
+              "oneOf": [
+                {
+                  "title": "Trigger on ON (default)",
+                  "enum": [
+                    "on"
+                  ]
+                },
+                {
+                  "title": "Trigger on OFF (default tile ON)",
+                  "enum": [
+                    "off"
+                  ]
+                }
+              ],
+              "description": "Choose whether trigger runs when switching ON or OFF. OFF mode keeps tile defaulted to ON and resets back to ON after trigger."
+            },
+            "unique_serial": {
+              "title": "Unique Serial",
+              "type": "string",
+              "default": "script2 Serial Number",
+              "description": "Recommended unique serial per device for HomeKit apps."
+            }
+          },
+          "form": [
+            "name",
+            "on",
+            "off",
+            "fileState",
+            "state",
+            "on_value",
+            "polling",
+            "polling_interval",
+            "polling_on_start",
+            "state_cache_ttl_ms",
+            "reset_state_cache_on_set",
+            "fail_on_state_exit_code",
+            "unique_serial"
+          ],
+          "allOf": [
+            {
+              "required": [
+                "name",
+                "on",
+                "off"
+              ],
+              "anyOf": [
+                {
+                  "required": [
+                    "state"
+                  ]
+                },
+                {
+                  "required": [
+                    "fileState"
+                  ]
+                }
+              ]
+            }
+          ],
+          "required": [
+            "name"
+          ]
+        },
+        "expandable": true,
+        "expanded": false
+      },
+      "stateless_devices": {
+        "title": "Stateless Triggers",
+        "type": "array",
+        "description": "Recommended: configure one-shot trigger devices here.",
+        "items": {
+          "title": "Device",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Accessory Name",
+              "type": "string",
+              "required": true
+            },
+            "on": {
+              "title": "ON Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/on.sh 1"
+            },
+            "off": {
+              "title": "OFF Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/off.sh 1"
+            },
+            "fileState": {
+              "title": "State File Path",
+              "type": "string",
+              "description": "If set, the on/off state is based on file existence and overrides state command.",
+              "placeholder": "/var/homebridge/scripts/device1.flag"
+            },
+            "state": {
+              "title": "State Command",
+              "type": "string",
+              "description": "Command that prints current state (for example: true/false)."
+            },
+            "on_value": {
+              "title": "ON Match Value",
+              "type": "string",
+              "default": "true",
+              "description": "State command output value interpreted as ON."
+            },
+            "polling": {
+              "title": "Enable Polling",
+              "type": "boolean",
+              "default": false,
+              "description": "Poll state command periodically (ignored when State File Path is set)."
+            },
+            "polling_interval": {
+              "title": "Polling Interval (ms)",
+              "type": "integer",
+              "default": 5000,
+              "minimum": 250
+            },
+            "polling_on_start": {
+              "title": "Poll Immediately on Startup",
+              "type": "boolean",
+              "default": true
+            },
+            "state_cache_ttl_ms": {
+              "title": "State Cache TTL (ms)",
+              "type": "integer",
+              "default": 1000,
+              "minimum": 0,
+              "description": "Short cache for burst reads to avoid duplicate command execution."
+            },
+            "reset_state_cache_on_set": {
+              "title": "Reset State Cache on Manual Set",
+              "type": "boolean",
+              "default": false,
+              "description": "When enabled, successful HomeKit ON/OFF actions reset the state cache TTL to the newly set state."
+            },
+            "fail_on_state_exit_code": {
+              "title": "Fail on Non-zero State Exit Code",
+              "type": "boolean",
+              "default": false,
+              "description": "When enabled, a non-zero exit code from the state command is treated as an error and the accessory is marked with a fault until reads recover."
+            },
+            "trigger": {
+              "title": "Trigger Command (stateless)",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/reboot.sh 1",
+              "description": "Command executed when a stateless trigger is pressed."
+            },
+            "auto_reset_ms": {
+              "title": "Auto Reset Delay (ms)",
+              "type": "integer",
+              "default": 500,
+              "minimum": 0,
+              "description": "For stateless triggers, delay before the switch resets back to its default tile state in Home app."
+            },
+            "stateless_trigger_on": {
+              "title": "Stateless Trigger On",
+              "type": "string",
+              "default": "on",
+              "oneOf": [
+                {
+                  "title": "Trigger on ON (default)",
+                  "enum": [
+                    "on"
+                  ]
+                },
+                {
+                  "title": "Trigger on OFF (default tile ON)",
+                  "enum": [
+                    "off"
+                  ]
+                }
+              ],
+              "description": "Choose whether trigger runs when switching ON or OFF. OFF mode keeps tile defaulted to ON and resets back to ON after trigger."
+            },
+            "unique_serial": {
+              "title": "Unique Serial",
+              "type": "string",
+              "default": "script2 Serial Number",
+              "description": "Recommended unique serial per device for HomeKit apps."
+            }
+          },
+          "form": [
+            "name",
+            "trigger",
+            "auto_reset_ms",
+            "stateless_trigger_on",
+            "unique_serial"
+          ],
+          "allOf": [
+            {
+              "required": [
+                "name",
+                "trigger"
+              ]
+            }
+          ],
+          "required": [
+            "name"
+          ]
+        },
+        "expandable": true,
+        "expanded": false
       }
     }
   }
