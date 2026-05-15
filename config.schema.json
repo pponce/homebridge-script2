@@ -33,17 +33,37 @@
               "type": "string",
               "required": true
             },
+            "device_type": {
+              "title": "Device Type",
+              "type": "string",
+              "default": "switch",
+              "oneOf": [
+                {
+                  "title": "Switch (ON/OFF)",
+                  "enum": [
+                    "switch"
+                  ]
+                },
+                {
+                  "title": "Stateless Trigger (single action)",
+                  "enum": [
+                    "stateless"
+                  ]
+                }
+              ],
+              "description": "Use 'switch' for normal ON/OFF control, or 'stateless' for a single-action trigger that auto-resets OFF."
+            },
             "on": {
               "title": "ON Command",
               "type": "string",
-              "required": true,
-              "placeholder": "/var/homebridge/scripts/on.sh 1"
+              "placeholder": "/var/homebridge/scripts/on.sh 1",
+              "required": true
             },
             "off": {
               "title": "OFF Command",
               "type": "string",
-              "required": true,
-              "placeholder": "/var/homebridge/scripts/off.sh 1"
+              "placeholder": "/var/homebridge/scripts/off.sh 1",
+              "required": true
             },
             "fileState": {
               "title": "State File Path",
@@ -98,13 +118,171 @@
               "default": false,
               "description": "When enabled, a non-zero exit code from the state command is treated as an error and the accessory is marked with a fault until reads recover."
             },
+            "trigger": {
+              "title": "Trigger Command (stateless)",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/reboot.sh 1",
+              "description": "Command executed when a stateless trigger is pressed.",
+              "required": true
+            },
+            "auto_reset_ms": {
+              "title": "Auto Reset Delay (ms)",
+              "type": "integer",
+              "default": 500,
+              "minimum": 0,
+              "description": "For stateless triggers, delay before the switch resets back to its default tile state in Home app."
+            },
+            "stateless_trigger_on": {
+              "title": "Stateless Trigger On",
+              "type": "string",
+              "default": "on",
+              "oneOf": [
+                {
+                  "title": "Trigger on ON (default)",
+                  "enum": [
+                    "on"
+                  ]
+                },
+                {
+                  "title": "Trigger on OFF (default tile ON)",
+                  "enum": [
+                    "off"
+                  ]
+                }
+              ],
+              "description": "Choose whether trigger runs when switching ON or OFF. OFF mode keeps tile defaulted to ON and resets back to ON after trigger."
+            },
             "unique_serial": {
               "title": "Unique Serial",
               "type": "string",
               "default": "script2 Serial Number",
               "description": "Recommended unique serial per device for HomeKit apps."
             }
-          }
+          },
+          "form": [
+            "name",
+            "device_type",
+            {
+              "key": "on",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "off",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "fileState",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "state",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "on_value",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "polling",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "polling_interval",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "polling_on_start",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "state_cache_ttl_ms",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "reset_state_cache_on_set",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "fail_on_state_exit_code",
+              "condition": {
+                "functionBody": "return model.device_type !== 'stateless'"
+              }
+            },
+            {
+              "key": "trigger",
+              "condition": {
+                "functionBody": "return model.device_type === 'stateless'"
+              }
+            },
+            {
+              "key": "auto_reset_ms",
+              "condition": {
+                "functionBody": "return model.device_type === 'stateless'"
+              }
+            },
+            {
+              "key": "stateless_trigger_on",
+              "condition": {
+                "functionBody": "return model.device_type === 'stateless'"
+              }
+            },
+            "unique_serial"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "device_type": {
+                    "const": "stateless"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "trigger"
+                ],
+                "properties": {
+                  "on": {
+                    "required": false
+                  },
+                  "off": {
+                    "required": false
+                  }
+                }
+              },
+              "else": {
+                "required": [
+                  "on",
+                  "off"
+                ],
+                "properties": {
+                  "trigger": {
+                    "required": false
+                  }
+                }
+              }
+            }
+          ]
         }
       }
     }
