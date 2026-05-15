@@ -20,6 +20,32 @@ module.exports = function (homebridge) {
   homebridge.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, Script2Platform, true);
 };
 
+
+function sanitizeDeviceConfig(deviceConfig) {
+  const sanitized = { ...(deviceConfig || {}) };
+  const deviceType = sanitized["device_type"] === "stateless" ? "stateless" : "switch";
+
+  if (deviceType === "stateless") {
+    delete sanitized["on"];
+    delete sanitized["off"];
+    delete sanitized["fileState"];
+    delete sanitized["state"];
+    delete sanitized["on_value"];
+    delete sanitized["polling"];
+    delete sanitized["polling_interval"];
+    delete sanitized["polling_on_start"];
+    delete sanitized["state_cache_ttl_ms"];
+    delete sanitized["reset_state_cache_on_set"];
+    delete sanitized["fail_on_state_exit_code"];
+  } else {
+    delete sanitized["trigger"];
+    delete sanitized["auto_reset_ms"];
+    delete sanitized["stateless_trigger_on"];
+  }
+
+  return sanitized;
+}
+
 class Script2Platform {
   constructor(log, config, api) {
     this.log = log;
@@ -48,7 +74,8 @@ class Script2Platform {
 
     const configuredUuids = new Set();
 
-    for (const deviceConfig of devices) {
+    for (const rawDeviceConfig of devices) {
+      const deviceConfig = sanitizeDeviceConfig(rawDeviceConfig);
       const name = deviceConfig?.name;
       if (!name) {
         this.log.error("Skipping platform device with missing required 'name'.");
