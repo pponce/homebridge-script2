@@ -56,14 +56,12 @@
             "on": {
               "title": "ON Command",
               "type": "string",
-              "placeholder": "/var/homebridge/scripts/on.sh 1",
-              "required": true
+              "placeholder": "/var/homebridge/scripts/on.sh 1"
             },
             "off": {
               "title": "OFF Command",
               "type": "string",
-              "placeholder": "/var/homebridge/scripts/off.sh 1",
-              "required": true
+              "placeholder": "/var/homebridge/scripts/off.sh 1"
             },
             "fileState": {
               "title": "State File Path",
@@ -122,8 +120,7 @@
               "title": "Trigger Command (stateless)",
               "type": "string",
               "placeholder": "/var/homebridge/scripts/reboot.sh 1",
-              "description": "Command executed when a stateless trigger is pressed.",
-              "required": true
+              "description": "Command executed when a stateless trigger is pressed."
             },
             "auto_reset_ms": {
               "title": "Auto Reset Delay (ms)",
@@ -259,27 +256,16 @@
               },
               "then": {
                 "required": [
+                  "name",
                   "trigger"
-                ],
-                "properties": {
-                  "on": {
-                    "required": false
-                  },
-                  "off": {
-                    "required": false
-                  }
-                }
+                ]
               },
               "else": {
                 "required": [
+                  "name",
                   "on",
                   "off"
-                ],
-                "properties": {
-                  "trigger": {
-                    "required": false
-                  }
-                }
+                ]
               }
             }
           ]
