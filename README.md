@@ -114,6 +114,44 @@ Example (8 existing stateful switches in legacy `devices` list shape):
 ```
 
 
+
+### New grouped Config UI sections (recommended)
+
+You can now configure devices in two dedicated platform arrays:
+
+- `stateful_devices`: normal ON/OFF switches
+- `stateless_devices`: single-action trigger switches
+
+These are recommended for Config UI X because they avoid complex per-row field toggling.
+Legacy `devices` is still supported for backward compatibility.
+
+Example:
+
+```json
+"platforms": [
+  {
+    "platform": "Script2Platform",
+    "name": "Script2",
+    "stateful_devices": [
+      {
+        "name": "Outlet 1",
+        "on": "/var/homebridge/rpc3control/on.sh 1",
+        "off": "/var/homebridge/rpc3control/off.sh 1",
+        "state": "/var/homebridge/rpc3control/state.sh 1"
+      }
+    ],
+    "stateless_devices": [
+      {
+        "name": "Outlet 1 Reboot",
+        "trigger": "/var/homebridge/rpc3control/reboot.sh 1",
+        "auto_reset_ms": 500,
+        "stateless_trigger_on": "off"
+      }
+    ]
+  }
+]
+```
+
 ### State script behavior
 - The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
 - If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.

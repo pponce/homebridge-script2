@@ -46,6 +46,19 @@ function sanitizeDeviceConfig(deviceConfig) {
   return sanitized;
 }
 
+
+function getConfiguredDevices(config) {
+  const legacyDevices = Array.isArray(config?.devices) ? config.devices : [];
+  const statefulDevices = Array.isArray(config?.stateful_devices)
+    ? config.stateful_devices.map((device) => ({ ...device, device_type: "switch" }))
+    : [];
+  const statelessDevices = Array.isArray(config?.stateless_devices)
+    ? config.stateless_devices.map((device) => ({ ...device, device_type: "stateless" }))
+    : [];
+
+  return [...legacyDevices, ...statefulDevices, ...statelessDevices];
+}
+
 class Script2Platform {
   constructor(log, config, api) {
     this.log = log;
@@ -65,7 +78,7 @@ class Script2Platform {
   }
 
   discoverDevices() {
-    const devices = Array.isArray(this.config.devices) ? this.config.devices : [];
+    const devices = getConfiguredDevices(this.config);
 
     if (devices.length === 0) {
       this.log.warn("No devices configured for Script2Platform.");
