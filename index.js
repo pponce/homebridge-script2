@@ -20,6 +20,49 @@ module.exports = function (homebridge) {
   homebridge.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, Script2Platform, true);
 };
 
+
+function sanitizeDeviceConfig(deviceConfig) {
+  const sanitized = { ...(deviceConfig || {}) };
+  const deviceType = sanitized["device_type"] === "stateless" ? "stateless" : "switch";
+
+  if (deviceType === "stateless") {
+    delete sanitized["on"];
+    delete sanitized["off"];
+    delete sanitized["fileState"];
+    delete sanitized["state"];
+    delete sanitized["on_value"];
+    delete sanitized["polling"];
+    delete sanitized["polling_interval"];
+    delete sanitized["polling_on_start"];
+    delete sanitized["state_cache_ttl_ms"];
+    delete sanitized["reset_state_cache_on_set"];
+    delete sanitized["fail_on_state_exit_code"];
+  } else {
+    delete sanitized["trigger"];
+    delete sanitized["auto_reset_ms"];
+    delete sanitized["stateless_trigger_on"];
+  }
+
+  return sanitized;
+}
+
+
+function getConfiguredDevices(config) {
+  const legacyDevices = Array.isArray(config?.devices) ? config.devices : [];
+  const statefulDevices = Array.isArray(config?.["On/Off Switches"])
+    ? config["On/Off Switches"].map((device) => ({ ...device, device_type: "switch" }))
+    : Array.isArray(config?.stateful_devices)
+      ? config.stateful_devices.map((device) => ({ ...device, device_type: "switch" }))
+      : [];
+  const statelessDevices = Array.isArray(config?.["Stateless Switches"])
+    ? config["Stateless Switches"].map((device) => ({ ...device, device_type: "stateless" }))
+    : Array.isArray(config?.stateless_devices)
+      ? config.stateless_devices.map((device) => ({ ...device, device_type: "stateless" }))
+      : [];
+
+  return [...legacyDevices, ...statefulDevices, ...statelessDevices];
+}
+
 class Script2Platform {
   constructor(log, config, api) {
     this.log = log;
@@ -39,7 +82,7 @@ class Script2Platform {
   }
 
   discoverDevices() {
-    const devices = Array.isArray(this.config.devices) ? this.config.devices : [];
+    const devices = getConfiguredDevices(this.config);
 
     if (devices.length === 0) {
       this.log.warn("No devices configured for Script2Platform.");
@@ -48,7 +91,8 @@ class Script2Platform {
 
     const configuredUuids = new Set();
 
-    for (const deviceConfig of devices) {
+    for (const rawDeviceConfig of devices) {
+      const deviceConfig = sanitizeDeviceConfig(rawDeviceConfig);
       const name = deviceConfig?.name;
       if (!name) {
         this.log.error("Skipping platform device with missing required 'name'.");
