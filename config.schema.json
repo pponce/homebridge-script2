@@ -33,6 +33,59 @@
               "type": "string",
               "required": true
             },
+            "device_type": {
+              "title": "Device Type",
+              "type": "string",
+              "default": "switch",
+              "oneOf": [
+                {
+                  "title": "Switch (ON/OFF)",
+                  "enum": [
+                    "switch"
+                  ]
+                },
+                {
+                  "title": "Stateless Trigger (single action)",
+                  "enum": [
+                    "stateless"
+                  ]
+                }
+              ],
+              "description": "Use 'switch' for normal ON/OFF control, or 'stateless' for a single-action trigger that auto-resets OFF."
+            },
+            "trigger": {
+              "title": "Trigger Command (stateless)",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/reboot.sh 1",
+              "description": "Command executed when a stateless trigger is pressed ON."
+            },
+            "auto_reset_ms": {
+              "title": "Auto Reset Delay (ms)",
+              "type": "integer",
+              "default": 500,
+              "minimum": 0,
+              "description": "For stateless triggers, delay before the switch resets back to OFF in Home app."
+            },
+            "stateless_trigger_on": {
+              "title": "Stateless Trigger On",
+              "type": "string",
+              "default": "on",
+              "oneOf": [
+                {
+                  "title": "Trigger on ON (default)",
+                  "enum": [
+                    "on"
+                  ]
+                },
+                {
+                  "title": "Trigger on OFF (default tile ON)",
+                  "enum": [
+                    "off"
+                  ]
+                }
+              ],
+              "description": "For stateless devices, choose whether trigger runs when switching ON or OFF. OFF mode keeps tile defaulted to ON and resets back to ON after trigger."
+            },
             "on": {
               "title": "ON Command",
               "type": "string",
