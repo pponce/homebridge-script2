@@ -84,6 +84,36 @@ Name            | Value         | Required                                    | 
 Type note: use JSON booleans for `polling` (for example `"polling": true`), not strings like `"polling": "true"`.
 
 
+### Config UI behavior with existing `devices` arrays
+
+If you already have a platform config with `devices` (for example 8 existing ON/OFF switches), Config UI X will load those entries into the same **Devices** array editor.
+
+- Your existing entries remain editable and are **not** removed.
+- Each existing device appears as one item in the Devices list (using the plugin schema form for that row).
+- Saving from Config UI X preserves backward compatibility with existing `devices`-based platform configs.
+
+Example (8 existing stateful switches in legacy `devices` list shape):
+
+```json
+"platforms": [
+  {
+    "platform": "Script2Platform",
+    "name": "Script2",
+    "devices": [
+      { "name": "Outlet 1", "on": "/opt/scripts/on.sh 1", "off": "/opt/scripts/off.sh 1", "state": "/opt/scripts/state.sh 1" },
+      { "name": "Outlet 2", "on": "/opt/scripts/on.sh 2", "off": "/opt/scripts/off.sh 2", "state": "/opt/scripts/state.sh 2" },
+      { "name": "Outlet 3", "on": "/opt/scripts/on.sh 3", "off": "/opt/scripts/off.sh 3", "state": "/opt/scripts/state.sh 3" },
+      { "name": "Outlet 4", "on": "/opt/scripts/on.sh 4", "off": "/opt/scripts/off.sh 4", "state": "/opt/scripts/state.sh 4" },
+      { "name": "Outlet 5", "on": "/opt/scripts/on.sh 5", "off": "/opt/scripts/off.sh 5", "state": "/opt/scripts/state.sh 5" },
+      { "name": "Outlet 6", "on": "/opt/scripts/on.sh 6", "off": "/opt/scripts/off.sh 6", "state": "/opt/scripts/state.sh 6" },
+      { "name": "Outlet 7", "on": "/opt/scripts/on.sh 7", "off": "/opt/scripts/off.sh 7", "state": "/opt/scripts/state.sh 7" },
+      { "name": "Outlet 8", "on": "/opt/scripts/on.sh 8", "off": "/opt/scripts/off.sh 8", "state": "/opt/scripts/state.sh 8" }
+    ]
+  }
+]
+```
+
+
 ### State script behavior
 - The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
 - If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
@@ -117,7 +147,7 @@ Type note: use JSON booleans for `polling` (for example `"polling": true`), not 
 - `stateless_trigger_on: "off"`: press OFF to trigger, then auto-reset to ON (default tile state is ON).
 - Stateful options (`state`, `fileState`, `polling`, `on_value`) are ignored for stateless devices.
 
-Example:
+Example (single stateless device object):
 
 ```json
 {
@@ -128,6 +158,34 @@ Example:
   "stateless_trigger_on": "off",
   "unique_serial": "rpc3-outlet1-reboot"
 }
+```
+
+Example (mixed platform with stateful + stateless in one `devices` list):
+
+```json
+"platforms": [
+  {
+    "platform": "Script2Platform",
+    "name": "Script2",
+    "devices": [
+      {
+        "name": "Rack PDU Outlet 1",
+        "device_type": "switch",
+        "on": "/var/homebridge/rpc3control/on.sh 1",
+        "off": "/var/homebridge/rpc3control/off.sh 1",
+        "state": "/var/homebridge/rpc3control/state.sh 1",
+        "on_value": "true"
+      },
+      {
+        "name": "Rack PDU Outlet 1 Reboot",
+        "device_type": "stateless",
+        "trigger": "/var/homebridge/rpc3control/reboot.sh 1",
+        "auto_reset_ms": 500,
+        "stateless_trigger_on": "off"
+      }
+    ]
+  }
+]
 ```
 
 ## Installation
