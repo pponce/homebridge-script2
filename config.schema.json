@@ -40,18 +40,15 @@
               "oneOf": [
                 {
                   "title": "Switch (ON/OFF)",
-                  "enum": [
-                    "switch"
-                  ]
+                  "const": "switch"
                 },
                 {
                   "title": "Stateless Trigger (single action)",
-                  "enum": [
-                    "stateless"
-                  ]
+                  "const": "stateless"
                 }
               ],
-              "description": "Use 'switch' for normal ON/OFF control, or 'stateless' for a single-action trigger that auto-resets OFF."
+              "description": "Use 'switch' for normal ON/OFF control, or 'stateless' for a single-action trigger that auto-resets OFF.",
+              "required": true
             },
             "on": {
               "title": "ON Command",
@@ -162,85 +159,85 @@
             {
               "key": "on",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "off",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "fileState",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "state",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "on_value",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "polling",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "polling_interval",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "polling_on_start",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "state_cache_ttl_ms",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "reset_state_cache_on_set",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "fail_on_state_exit_code",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type !== 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
               }
             },
             {
               "key": "trigger",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type === 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type === 'stateless'"
               }
             },
             {
               "key": "auto_reset_ms",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type === 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type === 'stateless'"
               }
             },
             {
               "key": "stateless_trigger_on",
               "condition": {
-                "functionBody": "const d=(model?.devices?.[arrayIndices?.devices])||model||{}; return d.device_type === 'stateless'"
+                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type === 'stateless'"
               }
             },
             "unique_serial"
@@ -280,6 +277,10 @@
                 ]
               }
             }
+          ],
+          "required": [
+            "name",
+            "device_type"
           ]
         }
       }
