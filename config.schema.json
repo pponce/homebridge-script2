@@ -21,275 +21,9 @@
         "description": "Display name for this platform instance in Homebridge."
       },
       "devices": {
-        "title": "Legacy Devices (Read-only compatibility section)",
+        "title": "Legacy Devices (auto-migrate to On/Off on save)",
         "type": "array",
-        "description": "Deprecated legacy mixed list. Existing setups continue to work at runtime. Move entries into Stateful/Stateless sections for best UI experience.",
-        "items": {
-          "title": "Device",
-          "type": "object",
-          "properties": {
-            "name": {
-              "title": "Accessory Name",
-              "type": "string",
-              "required": true
-            },
-            "device_type": {
-              "title": "Device Type",
-              "type": "string",
-              "default": "switch",
-              "oneOf": [
-                {
-                  "title": "Switch (ON/OFF)",
-                  "const": "switch"
-                },
-                {
-                  "title": "Stateless Trigger (single action)",
-                  "const": "stateless"
-                }
-              ],
-              "description": "Use 'switch' for normal ON/OFF control, or 'stateless' for a single-action trigger that auto-resets OFF.",
-              "required": true
-            },
-            "on": {
-              "title": "ON Command",
-              "type": "string",
-              "placeholder": "/var/homebridge/scripts/on.sh 1"
-            },
-            "off": {
-              "title": "OFF Command",
-              "type": "string",
-              "placeholder": "/var/homebridge/scripts/off.sh 1"
-            },
-            "fileState": {
-              "title": "State File Path",
-              "type": "string",
-              "description": "If set, the on/off state is based on file existence and overrides state command.",
-              "placeholder": "/var/homebridge/scripts/device1.flag"
-            },
-            "state": {
-              "title": "State Command",
-              "type": "string",
-              "description": "Command that prints current state (for example: true/false)."
-            },
-            "on_value": {
-              "title": "ON Match Value",
-              "type": "string",
-              "default": "true",
-              "description": "State command output value interpreted as ON."
-            },
-            "polling": {
-              "title": "Enable Polling",
-              "type": "boolean",
-              "default": false,
-              "description": "Poll state command periodically (ignored when State File Path is set)."
-            },
-            "polling_interval": {
-              "title": "Polling Interval (ms)",
-              "type": "integer",
-              "default": 5000,
-              "minimum": 250
-            },
-            "polling_on_start": {
-              "title": "Poll Immediately on Startup",
-              "type": "boolean",
-              "default": true
-            },
-            "state_cache_ttl_ms": {
-              "title": "State Cache TTL (ms)",
-              "type": "integer",
-              "default": 1000,
-              "minimum": 0,
-              "description": "Short cache for burst reads to avoid duplicate command execution."
-            },
-            "reset_state_cache_on_set": {
-              "title": "Reset State Cache on Manual Set",
-              "type": "boolean",
-              "default": false,
-              "description": "When enabled, successful HomeKit ON/OFF actions reset the state cache TTL to the newly set state."
-            },
-            "fail_on_state_exit_code": {
-              "title": "Fail on Non-zero State Exit Code",
-              "type": "boolean",
-              "default": false,
-              "description": "When enabled, a non-zero exit code from the state command is treated as an error and the accessory is marked with a fault until reads recover."
-            },
-            "trigger": {
-              "title": "Trigger Command (stateless)",
-              "type": "string",
-              "placeholder": "/var/homebridge/scripts/reboot.sh 1",
-              "description": "Command executed when a stateless trigger is pressed."
-            },
-            "auto_reset_ms": {
-              "title": "Auto Reset Delay (ms)",
-              "type": "integer",
-              "default": 500,
-              "minimum": 0,
-              "description": "For stateless triggers, delay before the switch resets back to its default tile state in Home app."
-            },
-            "stateless_trigger_on": {
-              "title": "Stateless Trigger On",
-              "type": "string",
-              "default": "on",
-              "oneOf": [
-                {
-                  "title": "Trigger on ON (default)",
-                  "enum": [
-                    "on"
-                  ]
-                },
-                {
-                  "title": "Trigger on OFF (default tile ON)",
-                  "enum": [
-                    "off"
-                  ]
-                }
-              ],
-              "description": "Choose whether trigger runs when switching ON or OFF. OFF mode keeps tile defaulted to ON and resets back to ON after trigger."
-            },
-            "unique_serial": {
-              "title": "Unique Serial",
-              "type": "string",
-              "default": "script2 Serial Number",
-              "description": "Recommended unique serial per device for HomeKit apps."
-            }
-          },
-          "form": [
-            "name",
-            "device_type",
-            {
-              "key": "on",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "off",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "fileState",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "state",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "on_value",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "polling",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "polling_interval",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "polling_on_start",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "state_cache_ttl_ms",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "reset_state_cache_on_set",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "fail_on_state_exit_code",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type !== 'stateless'"
-              }
-            },
-            {
-              "key": "trigger",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type === 'stateless'"
-              }
-            },
-            {
-              "key": "auto_reset_ms",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type === 'stateless'"
-              }
-            },
-            {
-              "key": "stateless_trigger_on",
-              "condition": {
-                "functionBody": "const i=(typeof arrayIndices==='number')?arrayIndices:((arrayIndices&&typeof arrayIndices.devices==='number')?arrayIndices.devices:-1); const d=(model&&Array.isArray(model.devices)&&i>=0)?(model.devices[i]||{}):(model||{}); return d.device_type === 'stateless'"
-              }
-            },
-            "unique_serial"
-          ],
-          "allOf": [
-            {
-              "if": {
-                "properties": {
-                  "device_type": {
-                    "const": "stateless"
-                  }
-                }
-              },
-              "then": {
-                "required": [
-                  "name",
-                  "trigger"
-                ]
-              },
-              "else": {
-                "required": [
-                  "name",
-                  "on",
-                  "off"
-                ],
-                "anyOf": [
-                  {
-                    "required": [
-                      "state"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "fileState"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "required": [
-            "name",
-            "device_type"
-          ]
-        },
-        "expandable": true,
-        "expanded": false
-      },
-      "on_off_switches": {
-        "title": "On/Off Switches",
-        "type": "array",
-        "description": "Recommended: configure standard ON/OFF switches here.",
+        "description": "Legacy compatibility list. Entries are treated as On/Off switches.",
         "items": {
           "title": "{{ value.name || \"New Stateful Switch\" }}",
           "type": "object",
@@ -302,7 +36,6 @@
             "unique_serial": {
               "title": "Unique Serial",
               "type": "string",
-              "default": "script2 Serial Number",
               "description": "Recommended unique serial per device for HomeKit apps."
             },
             "on": {
@@ -403,7 +136,127 @@
           ]
         },
         "expandable": true,
-        "expanded": false
+        "expanded": false,
+        "default": []
+      },
+      "on_off_switches": {
+        "title": "On/Off Switches",
+        "type": "array",
+        "description": "Recommended: configure standard ON/OFF switches here.",
+        "items": {
+          "title": "{{ value.name || \"New Stateful Switch\" }}",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Accessory Name",
+              "type": "string",
+              "required": true
+            },
+            "unique_serial": {
+              "title": "Unique Serial",
+              "type": "string",
+              "description": "Recommended unique serial per device for HomeKit apps."
+            },
+            "on": {
+              "title": "ON Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/on.sh 1"
+            },
+            "off": {
+              "title": "OFF Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/off.sh 1"
+            },
+            "fileState": {
+              "title": "State File Path",
+              "type": "string",
+              "description": "If set, the on/off state is based on file existence and overrides state command.",
+              "placeholder": "/var/homebridge/scripts/device1.flag"
+            },
+            "state": {
+              "title": "State Command",
+              "type": "string",
+              "description": "Command that prints current state (for example: true/false)."
+            },
+            "on_value": {
+              "title": "ON Match Value",
+              "type": "string",
+              "default": "true",
+              "description": "State command output value interpreted as ON."
+            },
+            "polling": {
+              "title": "Enable Polling",
+              "type": "boolean",
+              "default": false,
+              "description": "Poll state command periodically (ignored when State File Path is set)."
+            },
+            "polling_interval": {
+              "title": "Polling Interval (ms)",
+              "type": "integer",
+              "default": 5000,
+              "minimum": 250
+            },
+            "polling_on_start": {
+              "title": "Poll Immediately on Startup",
+              "type": "boolean",
+              "default": true
+            },
+            "state_cache_ttl_ms": {
+              "title": "State Cache TTL (ms)",
+              "type": "integer",
+              "default": 1000,
+              "minimum": 0,
+              "description": "Short cache for burst reads to avoid duplicate command execution."
+            },
+            "reset_state_cache_on_set": {
+              "title": "Reset State Cache on Manual Set",
+              "type": "boolean",
+              "default": false
+            },
+            "fail_on_state_exit_code": {
+              "title": "Fail on Non-zero State Exit Code",
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "name",
+            "on",
+            "off"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "state"
+              ]
+            },
+            {
+              "required": [
+                "fileState"
+              ]
+            }
+          ],
+          "expandable": true,
+          "expanded": false,
+          "form": [
+            "name",
+            "on",
+            "off",
+            "fileState",
+            "state",
+            "on_value",
+            "polling",
+            "polling_interval",
+            "polling_on_start",
+            "state_cache_ttl_ms",
+            "reset_state_cache_on_set",
+            "fail_on_state_exit_code",
+            "unique_serial"
+          ]
+        },
+        "expandable": true,
+        "expanded": false,
+        "default": []
       },
       "stateless_switches": {
         "title": "Stateless Switches",
@@ -421,7 +274,6 @@
             "unique_serial": {
               "title": "Unique Serial",
               "type": "string",
-              "default": "script2 Serial Number",
               "description": "Recommended unique serial per device for HomeKit apps."
             },
             "trigger": {
@@ -432,13 +284,11 @@
             "auto_reset_ms": {
               "title": "Auto Reset Delay (ms)",
               "type": "integer",
-              "default": 500,
               "minimum": 0
             },
             "stateless_trigger_on": {
               "title": "Stateless Trigger On",
               "type": "string",
-              "default": "on",
               "oneOf": [
                 {
                   "title": "Trigger on ON (default)",
@@ -466,7 +316,8 @@
           ]
         },
         "expandable": true,
-        "expanded": false
+        "expanded": false,
+        "default": []
       }
     }
   }

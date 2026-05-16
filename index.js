@@ -99,7 +99,7 @@ class Script2Platform {
       const deviceConfig = sanitizeDeviceConfig(rawDeviceConfig);
       const name = deviceConfig?.name;
       if (!name) {
-        this.log.error("Skipping platform device with missing required 'name'.");
+        this.log.debug("Ignoring incomplete device entry without name.");
         continue;
       }
 
