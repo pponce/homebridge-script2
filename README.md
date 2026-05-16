@@ -84,6 +84,74 @@ Name            | Value         | Required                                    | 
 Type note: use JSON booleans for `polling` (for example `"polling": true`), not strings like `"polling": "true"`.
 
 
+### Config UI behavior with existing `devices` arrays
+
+If you already have a platform config with `devices` (for example 8 existing ON/OFF switches), Config UI X will load those entries into the same **Devices** array editor.
+
+- Your existing entries remain editable and are **not** removed.
+- Each existing device appears as one item in the Devices list (using the plugin schema form for that row).
+- Saving from Config UI X preserves backward compatibility with existing `devices`-based platform configs.
+
+Example (8 existing stateful switches in legacy `devices` list shape):
+
+```json
+"platforms": [
+  {
+    "platform": "Script2Platform",
+    "name": "Script2",
+    "devices": [
+      { "name": "Outlet 1", "on": "/opt/scripts/on.sh 1", "off": "/opt/scripts/off.sh 1", "state": "/opt/scripts/state.sh 1" },
+      { "name": "Outlet 2", "on": "/opt/scripts/on.sh 2", "off": "/opt/scripts/off.sh 2", "state": "/opt/scripts/state.sh 2" },
+      { "name": "Outlet 3", "on": "/opt/scripts/on.sh 3", "off": "/opt/scripts/off.sh 3", "state": "/opt/scripts/state.sh 3" },
+      { "name": "Outlet 4", "on": "/opt/scripts/on.sh 4", "off": "/opt/scripts/off.sh 4", "state": "/opt/scripts/state.sh 4" },
+      { "name": "Outlet 5", "on": "/opt/scripts/on.sh 5", "off": "/opt/scripts/off.sh 5", "state": "/opt/scripts/state.sh 5" },
+      { "name": "Outlet 6", "on": "/opt/scripts/on.sh 6", "off": "/opt/scripts/off.sh 6", "state": "/opt/scripts/state.sh 6" },
+      { "name": "Outlet 7", "on": "/opt/scripts/on.sh 7", "off": "/opt/scripts/off.sh 7", "state": "/opt/scripts/state.sh 7" },
+      { "name": "Outlet 8", "on": "/opt/scripts/on.sh 8", "off": "/opt/scripts/off.sh 8", "state": "/opt/scripts/state.sh 8" }
+    ]
+  }
+]
+```
+
+
+
+### New grouped Config UI sections (recommended)
+
+You can now configure devices in two dedicated platform arrays:
+
+- `on_off_switches` (displayed in UI as **On/Off Switches**): normal ON/OFF switches
+- `stateless_switches` (displayed in UI as **Stateless Switches**): single-action trigger switches
+
+These are recommended for Config UI X because they avoid complex per-row field toggling.
+Legacy `devices` is still supported for backward compatibility.
+
+Example:
+
+```json
+"platforms": [
+  {
+    "platform": "Script2Platform",
+    "name": "Script2",
+    "on_off_switches": [
+      {
+        "name": "Outlet 1",
+        "on": "/var/homebridge/rpc3control/on.sh 1",
+        "off": "/var/homebridge/rpc3control/off.sh 1",
+        "state": "/var/homebridge/rpc3control/state.sh 1"
+      }
+    ],
+    "stateless_switches": [
+      {
+        "name": "Outlet 1 Reboot",
+        "trigger": "/var/homebridge/rpc3control/reboot.sh 1",
+        "auto_reset_ms": 500,
+        "stateless_trigger_on": "off"
+      }
+    ]
+  }
+]
+```
+
 ### State script behavior
 - The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
 - If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
@@ -117,7 +185,7 @@ Type note: use JSON booleans for `polling` (for example `"polling": true`), not 
 - `stateless_trigger_on: "off"`: press OFF to trigger, then auto-reset to ON (default tile state is ON).
 - Stateful options (`state`, `fileState`, `polling`, `on_value`) are ignored for stateless devices.
 
-Example:
+Example (single stateless device object):
 
 ```json
 {
@@ -128,6 +196,34 @@ Example:
   "stateless_trigger_on": "off",
   "unique_serial": "rpc3-outlet1-reboot"
 }
+```
+
+Example (mixed platform with stateful + stateless in one `devices` list):
+
+```json
+"platforms": [
+  {
+    "platform": "Script2Platform",
+    "name": "Script2",
+    "devices": [
+      {
+        "name": "Rack PDU Outlet 1",
+        "device_type": "switch",
+        "on": "/var/homebridge/rpc3control/on.sh 1",
+        "off": "/var/homebridge/rpc3control/off.sh 1",
+        "state": "/var/homebridge/rpc3control/state.sh 1",
+        "on_value": "true"
+      },
+      {
+        "name": "Rack PDU Outlet 1 Reboot",
+        "device_type": "stateless",
+        "trigger": "/var/homebridge/rpc3control/reboot.sh 1",
+        "auto_reset_ms": 500,
+        "stateless_trigger_on": "off"
+      }
+    ]
+  }
+]
 ```
 
 ## Installation
@@ -357,3 +453,23 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 - Add logging and fail-fast flags (`set -euo pipefail`) in shell scripts.
 - Keep scripts minimal; move complex logic to separate files you can test independently.
 - Restart Homebridge after major script/permission changes to ensure a clean environment.
+
+
+### Migration notes (legacy `devices` -> grouped sections)
+
+- **No breaking change**: legacy `devices` remains supported as-is. You do not need to change config for existing installs.
+- HomeKit accessory UUIDs are generated from the accessory **name** (`homebridge-script2:<name>`).
+- If you copy a legacy device into `on_off_switches` (displayed in UI as **On/Off Switches**) with the **same name** and remove it from `devices`, Homebridge should match it to the same cached accessory (not create a new one).
+- If you keep duplicate entries with the same name in both sections at once, behavior is undefined and may cause duplicate-config conflicts.
+
+Recommended migration steps:
+1. Stop Homebridge.
+2. Move one legacy `devices` entry at a time into `on_off_switches` (displayed in UI as **On/Off Switches**) (or `stateless_switches` (displayed in UI as **Stateless Switches**)) **with the exact same `name`**.
+3. Remove the moved entry from legacy `devices`.
+4. Start Homebridge and verify the accessory still appears as the same device in HomeKit.
+5. Repeat for remaining devices.
+
+Do users need to remove old devices from HomeKit?
+- **Usually no**, if the name is unchanged during migration.
+- **Yes**, only if you intentionally rename accessories (name change = new UUID/new HomeKit accessory identity).
+
