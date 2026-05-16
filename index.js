@@ -49,16 +49,20 @@ function sanitizeDeviceConfig(deviceConfig) {
 
 function getConfiguredDevices(config) {
   const legacyDevices = Array.isArray(config?.devices) ? config.devices : [];
-  const statefulDevices = Array.isArray(config?.["On/Off Switches"])
-    ? config["On/Off Switches"].map((device) => ({ ...device, device_type: "switch" }))
-    : Array.isArray(config?.stateful_devices)
-      ? config.stateful_devices.map((device) => ({ ...device, device_type: "switch" }))
-      : [];
-  const statelessDevices = Array.isArray(config?.["Stateless Switches"])
-    ? config["Stateless Switches"].map((device) => ({ ...device, device_type: "stateless" }))
-    : Array.isArray(config?.stateless_devices)
-      ? config.stateless_devices.map((device) => ({ ...device, device_type: "stateless" }))
-      : [];
+  const statefulDevices = Array.isArray(config?.on_off_switches)
+    ? config.on_off_switches.map((device) => ({ ...device, device_type: "switch" }))
+    : Array.isArray(config?.["On/Off Switches"])
+      ? config["On/Off Switches"].map((device) => ({ ...device, device_type: "switch" }))
+      : Array.isArray(config?.stateful_devices)
+        ? config.stateful_devices.map((device) => ({ ...device, device_type: "switch" }))
+        : [];
+  const statelessDevices = Array.isArray(config?.stateless_switches)
+    ? config.stateless_switches.map((device) => ({ ...device, device_type: "stateless" }))
+    : Array.isArray(config?.["Stateless Switches"])
+      ? config["Stateless Switches"].map((device) => ({ ...device, device_type: "stateless" }))
+      : Array.isArray(config?.stateless_devices)
+        ? config.stateless_devices.map((device) => ({ ...device, device_type: "stateless" }))
+        : [];
 
   return [...legacyDevices, ...statefulDevices, ...statelessDevices];
 }

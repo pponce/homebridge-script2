@@ -119,8 +119,8 @@ Example (8 existing stateful switches in legacy `devices` list shape):
 
 You can now configure devices in two dedicated platform arrays:
 
-- `On/Off Switches`: normal ON/OFF switches
-- `Stateless Switches`: single-action trigger switches
+- `on_off_switches` (displayed in UI as **On/Off Switches**): normal ON/OFF switches
+- `stateless_switches` (displayed in UI as **Stateless Switches**): single-action trigger switches
 
 These are recommended for Config UI X because they avoid complex per-row field toggling.
 Legacy `devices` is still supported for backward compatibility.
@@ -132,7 +132,7 @@ Example:
   {
     "platform": "Script2Platform",
     "name": "Script2",
-    "On/Off Switches": [
+    "on_off_switches": [
       {
         "name": "Outlet 1",
         "on": "/var/homebridge/rpc3control/on.sh 1",
@@ -140,7 +140,7 @@ Example:
         "state": "/var/homebridge/rpc3control/state.sh 1"
       }
     ],
-    "Stateless Switches": [
+    "stateless_switches": [
       {
         "name": "Outlet 1 Reboot",
         "trigger": "/var/homebridge/rpc3control/reboot.sh 1",
@@ -459,12 +459,12 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 
 - **No breaking change**: legacy `devices` remains supported as-is. You do not need to change config for existing installs.
 - HomeKit accessory UUIDs are generated from the accessory **name** (`homebridge-script2:<name>`).
-- If you copy a legacy device into `On/Off Switches` with the **same name** and remove it from `devices`, Homebridge should match it to the same cached accessory (not create a new one).
+- If you copy a legacy device into `on_off_switches` (displayed in UI as **On/Off Switches**) with the **same name** and remove it from `devices`, Homebridge should match it to the same cached accessory (not create a new one).
 - If you keep duplicate entries with the same name in both sections at once, behavior is undefined and may cause duplicate-config conflicts.
 
 Recommended migration steps:
 1. Stop Homebridge.
-2. Move one legacy `devices` entry at a time into `On/Off Switches` (or `Stateless Switches`) **with the exact same `name`**.
+2. Move one legacy `devices` entry at a time into `on_off_switches` (displayed in UI as **On/Off Switches**) (or `stateless_switches` (displayed in UI as **Stateless Switches**)) **with the exact same `name`**.
 3. Remove the moved entry from legacy `devices`.
 4. Start Homebridge and verify the accessory still appears as the same device in HomeKit.
 5. Repeat for remaining devices.

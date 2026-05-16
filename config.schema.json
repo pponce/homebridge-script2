@@ -286,7 +286,7 @@
         "expandable": true,
         "expanded": false
       },
-      "On/Off Switches": {
+      "on_off_switches": {
         "title": "On/Off Switches",
         "type": "array",
         "description": "Recommended: configure standard ON/OFF switches here.",
@@ -405,7 +405,7 @@
         "expandable": true,
         "expanded": false
       },
-      "Stateless Switches": {
+      "stateless_switches": {
         "title": "Stateless Switches",
         "type": "array",
         "description": "Recommended: configure one-shot trigger devices here.",
