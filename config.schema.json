@@ -20,137 +20,17 @@
         "required": true,
         "description": "Display name for this platform instance in Homebridge."
       },
-      "devices": {
-        "title": "Legacy Devices (auto-migrate to On/Off on save)",
-        "type": "array",
-        "description": "Legacy compatibility list. Entries are treated as On/Off switches.",
-        "items": {
-          "title": "{{ value.name || \"New Stateful Switch\" }}",
-          "type": "object",
-          "properties": {
-            "name": {
-              "title": "Accessory Name",
-              "type": "string",
-              "required": true
-            },
-            "unique_serial": {
-              "title": "Unique Serial",
-              "type": "string",
-              "description": "Recommended unique serial per device for HomeKit apps."
-            },
-            "on": {
-              "title": "ON Command",
-              "type": "string",
-              "placeholder": "/var/homebridge/scripts/on.sh 1"
-            },
-            "off": {
-              "title": "OFF Command",
-              "type": "string",
-              "placeholder": "/var/homebridge/scripts/off.sh 1"
-            },
-            "fileState": {
-              "title": "State File Path",
-              "type": "string",
-              "description": "If set, the on/off state is based on file existence and overrides state command.",
-              "placeholder": "/var/homebridge/scripts/device1.flag"
-            },
-            "state": {
-              "title": "State Command",
-              "type": "string",
-              "description": "Command that prints current state (for example: true/false)."
-            },
-            "on_value": {
-              "title": "ON Match Value",
-              "type": "string",
-              "default": "true",
-              "description": "State command output value interpreted as ON."
-            },
-            "polling": {
-              "title": "Enable Polling",
-              "type": "boolean",
-              "default": false,
-              "description": "Poll state command periodically (ignored when State File Path is set)."
-            },
-            "polling_interval": {
-              "title": "Polling Interval (ms)",
-              "type": "integer",
-              "default": 5000,
-              "minimum": 250
-            },
-            "polling_on_start": {
-              "title": "Poll Immediately on Startup",
-              "type": "boolean",
-              "default": true
-            },
-            "state_cache_ttl_ms": {
-              "title": "State Cache TTL (ms)",
-              "type": "integer",
-              "default": 1000,
-              "minimum": 0,
-              "description": "Short cache for burst reads to avoid duplicate command execution."
-            },
-            "reset_state_cache_on_set": {
-              "title": "Reset State Cache on Manual Set",
-              "type": "boolean",
-              "default": false
-            },
-            "fail_on_state_exit_code": {
-              "title": "Fail on Non-zero State Exit Code",
-              "type": "boolean",
-              "default": false
-            }
-          },
-          "required": [
-            "name",
-            "on",
-            "off"
-          ],
-          "anyOf": [
-            {
-              "required": [
-                "state"
-              ]
-            },
-            {
-              "required": [
-                "fileState"
-              ]
-            }
-          ],
-          "expandable": true,
-          "expanded": false,
-          "form": [
-            "name",
-            "on",
-            "off",
-            "fileState",
-            "state",
-            "on_value",
-            "polling",
-            "polling_interval",
-            "polling_on_start",
-            "state_cache_ttl_ms",
-            "reset_state_cache_on_set",
-            "fail_on_state_exit_code",
-            "unique_serial"
-          ]
-        },
-        "expandable": true,
-        "expanded": false,
-        "default": []
-      },
       "on_off_switches": {
         "title": "On/Off Switches",
         "type": "array",
-        "description": "Recommended: configure standard ON/OFF switches here.",
+        "description": "Configure standard ON/OFF switches in this section.",
         "items": {
           "title": "{{ value.name || \"New Stateful Switch\" }}",
           "type": "object",
           "properties": {
             "name": {
               "title": "Accessory Name",
-              "type": "string",
-              "required": true
+              "type": "string"
             },
             "unique_serial": {
               "title": "Unique Serial",
@@ -261,15 +141,14 @@
       "stateless_switches": {
         "title": "Stateless Switches",
         "type": "array",
-        "description": "Recommended: configure one-shot trigger devices here.",
+        "description": "Configure stateless switch device in this section.",
         "items": {
           "title": "{{ value.name || \"New Stateless Trigger\" }}",
           "type": "object",
           "properties": {
             "name": {
               "title": "Accessory Name",
-              "type": "string",
-              "required": true
+              "type": "string"
             },
             "unique_serial": {
               "title": "Unique Serial",
@@ -289,13 +168,15 @@
             "stateless_trigger_on": {
               "title": "Stateless Trigger On",
               "type": "string",
+              "default": "on",
+              "description": "Trigger on On: runs the command when the switch is turned ON. Trigger on Off: runs the command when turned OFF (tile defaults to ON).",
               "oneOf": [
                 {
-                  "title": "Trigger on ON (default)",
+                  "title": "Trigger on On",
                   "const": "on"
                 },
                 {
-                  "title": "Trigger on OFF (default tile ON)",
+                  "title": "Trigger on Off",
                   "const": "off"
                 }
               ]
@@ -312,6 +193,127 @@
             "trigger",
             "auto_reset_ms",
             "stateless_trigger_on",
+            "unique_serial"
+          ]
+        },
+        "expandable": true,
+        "expanded": false,
+        "default": []
+      },
+      "devices": {
+        "title": "Legacy Devices (auto-migrate to On/Off on save)",
+        "type": "array",
+        "description": "Legacy compatibility list. Entries are treated as On/Off switches.",
+        "condition": {
+          "functionBody": "return Array.isArray(model.devices) && model.devices.length > 0;"
+        },
+        "items": {
+          "title": "{{ value.name || \"New Stateful Switch\" }}",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Accessory Name",
+              "type": "string"
+            },
+            "unique_serial": {
+              "title": "Unique Serial",
+              "type": "string",
+              "description": "Recommended unique serial per device for HomeKit apps."
+            },
+            "on": {
+              "title": "ON Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/on.sh 1"
+            },
+            "off": {
+              "title": "OFF Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/off.sh 1"
+            },
+            "fileState": {
+              "title": "State File Path",
+              "type": "string",
+              "description": "If set, the on/off state is based on file existence and overrides state command.",
+              "placeholder": "/var/homebridge/scripts/device1.flag"
+            },
+            "state": {
+              "title": "State Command",
+              "type": "string",
+              "description": "Command that prints current state (for example: true/false)."
+            },
+            "on_value": {
+              "title": "ON Match Value",
+              "type": "string",
+              "default": "true",
+              "description": "State command output value interpreted as ON."
+            },
+            "polling": {
+              "title": "Enable Polling",
+              "type": "boolean",
+              "default": false,
+              "description": "Poll state command periodically (ignored when State File Path is set)."
+            },
+            "polling_interval": {
+              "title": "Polling Interval (ms)",
+              "type": "integer",
+              "default": 5000,
+              "minimum": 250
+            },
+            "polling_on_start": {
+              "title": "Poll Immediately on Startup",
+              "type": "boolean",
+              "default": true
+            },
+            "state_cache_ttl_ms": {
+              "title": "State Cache TTL (ms)",
+              "type": "integer",
+              "default": 1000,
+              "minimum": 0,
+              "description": "Short cache for burst reads to avoid duplicate command execution."
+            },
+            "reset_state_cache_on_set": {
+              "title": "Reset State Cache on Manual Set",
+              "type": "boolean",
+              "default": false
+            },
+            "fail_on_state_exit_code": {
+              "title": "Fail on Non-zero State Exit Code",
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "name",
+            "on",
+            "off"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "state"
+              ]
+            },
+            {
+              "required": [
+                "fileState"
+              ]
+            }
+          ],
+          "expandable": true,
+          "expanded": false,
+          "form": [
+            "name",
+            "on",
+            "off",
+            "fileState",
+            "state",
+            "on_value",
+            "polling",
+            "polling_interval",
+            "polling_on_start",
+            "state_cache_ttl_ms",
+            "reset_state_cache_on_set",
+            "fail_on_state_exit_code",
             "unique_serial"
           ]
         },
