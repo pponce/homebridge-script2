@@ -23,6 +23,7 @@
       "on_off_switches": {
         "title": "On/Off Switches",
         "type": "array",
+        "minItems": 0,
         "description": "Configure standard ON/OFF switches in this section.",
         "items": {
           "title": "{{ value.name || \"New Stateful Switch\" }}",
@@ -99,6 +100,7 @@
               "default": false
             }
           },
+          "description": "Use Add Device to create entries.",
           "required": [
             "name",
             "on",
@@ -141,6 +143,7 @@
       "stateless_switches": {
         "title": "Stateless Switches",
         "type": "array",
+        "minItems": 0,
         "description": "Configure stateless switch device in this section.",
         "items": {
           "title": "{{ value.name || \"New Stateless Trigger\" }}",
@@ -182,6 +185,7 @@
               ]
             }
           },
+          "description": "Use Add Device to create entries.",
           "required": [
             "name",
             "trigger"
@@ -203,6 +207,7 @@
       "devices": {
         "title": "Legacy Devices (auto-migrate to On/Off on save)",
         "type": "array",
+        "minItems": 0,
         "description": "Legacy compatibility list. Entries are treated as On/Off switches.",
         "condition": {
           "functionBody": "return Array.isArray(model.devices) && model.devices.length > 0;"
@@ -282,6 +287,7 @@
               "default": false
             }
           },
+          "description": "Use Add Device to create entries.",
           "required": [
             "name",
             "on",
