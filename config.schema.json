@@ -205,7 +205,7 @@
         "default": []
       },
       "devices": {
-        "title": "Legacy Devices (auto-migrate to On/Off on save)",
+        "title": "Legacy Devices Config",
         "type": "array",
         "minItems": 0,
         "description": "Legacy compatibility list. Entries are treated as On/Off switches.",
@@ -325,7 +325,7 @@
         },
         "expandable": true,
         "expanded": false,
-        "default": []
+        "default": null
       }
     }
   }
