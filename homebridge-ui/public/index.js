@@ -23,26 +23,52 @@ function textInput(value, onChange) {
   return el('input', { value: value || '', oninput: (e) => onChange(e.target.value) });
 }
 
-function renderDeviceRow(device, key, idx, fields) {
-  const row = el('div', { class: 'row' });
-  fields.forEach(([field, label]) => {
-    row.appendChild(el('label', { text: label }));
-    row.appendChild(textInput(device[field], (v) => { state[key][idx][field] = v; }));
+function selectInput(value, options, onChange) {
+  const node = el('select', { onchange: (e) => onChange(e.target.value) });
+  options.forEach((opt) => {
+    const option = el('option', { value: opt.value, text: opt.label });
+    if ((value || '') === opt.value) option.selected = true;
+    node.appendChild(option);
   });
-  row.appendChild(el('button', { text: 'Remove', onclick: () => { state[key].splice(idx, 1); render(); } }));
-  return row;
+  return node;
 }
 
-function renderSection(title, key, fields) {
-  const section = el('div');
-  section.appendChild(el('h3', { text: title }));
+function renderDeviceRow(device, key, idx, fields) {
+  const title = device.name && String(device.name).trim().length > 0 ? device.name : `New ${key === 'stateless_switches' ? 'Stateless Trigger' : 'Stateful Switch'}`;
+  const details = el('details', { class: 'device' });
+  const summary = el('summary', {}, [el('span', { text: title }), el('span', { text: 'Edit' })]);
+  details.appendChild(summary);
+  const row = el('div', { class: 'device-body' });
+  fields.forEach(([field, label]) => {
+    row.appendChild(el('label', { text: label }));
+    if (field === 'stateless_trigger_on') {
+      row.appendChild(selectInput(device[field] || 'on', [
+        { value: 'on', label: 'Trigger on On' },
+        { value: 'off', label: 'Trigger on Off' },
+      ], (v) => { state[key][idx][field] = v; }));
+    } else {
+      row.appendChild(textInput(device[field], (v) => { state[key][idx][field] = v; }));
+    }
+  });
+  row.appendChild(el('button', { class: 'btn btn-remove', text: 'Remove Device', onclick: () => { state[key].splice(idx, 1); render(); } }));
+  details.appendChild(row);
+  return details;
+}
 
-  (state[key] || []).forEach((d, i) => section.appendChild(renderDeviceRow(d, key, i, fields)));
+function renderSection(title, description, key, fields) {
+  const section = el('details', { class: 'section', open: '' });
+  section.appendChild(el('summary', { text: title }));
+  const content = el('div', { class: 'section-content' });
+  content.appendChild(el('div', { class: 'section-desc', text: description }));
 
-  section.appendChild(el('button', {
-    text: `Add ${title.slice(0, -1)}`,
+  (state[key] || []).forEach((d, i) => content.appendChild(renderDeviceRow(d, key, i, fields)));
+
+  content.appendChild(el('button', {
+    class: 'btn btn-add',
+    text: `Add ${title.slice(0, -1)} Device`,
     onclick: () => { state[key].push({}); render(); },
   }));
+  section.appendChild(content);
 
   return section;
 }
@@ -51,16 +77,16 @@ function render() {
   const app = document.getElementById('app');
   app.innerHTML = '';
 
-  app.appendChild(renderSection('On/Off Switches', 'on_off_switches', [
+  app.appendChild(renderSection('On/Off Switches', 'Configure standard ON/OFF switches in this section.', 'on_off_switches', [
     ['name', 'Accessory Name'], ['on', 'ON Command'], ['off', 'OFF Command'], ['state', 'State Command'], ['fileState', 'State File Path'],
   ]));
 
-  app.appendChild(renderSection('Stateless Switches', 'stateless_switches', [
+  app.appendChild(renderSection('Stateless Switches', 'Configure stateless switch device in this section.', 'stateless_switches', [
     ['name', 'Accessory Name'], ['trigger', 'Trigger Command'], ['auto_reset_ms', 'Auto Reset Delay (ms)'], ['stateless_trigger_on', 'Stateless Trigger On (on/off)'],
   ]));
 
   if ((state.devices || []).length > 0) {
-    app.appendChild(renderSection('Legacy Devices Config', 'devices', [
+    app.appendChild(renderSection('Legacy Devices Config', 'Legacy compatibility list. Entries are treated as On/Off switches.', 'devices', [
       ['name', 'Accessory Name'], ['on', 'ON Command'], ['off', 'OFF Command'], ['state', 'State Command'], ['fileState', 'State File Path'],
     ]));
   }
