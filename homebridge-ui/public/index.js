@@ -7,6 +7,11 @@ const state = {
   stateless_switches: [],
   devices: [],
 };
+const openSections = {
+  on_off_switches: false,
+  stateless_switches: false,
+  devices: false,
+};
 
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -39,8 +44,10 @@ function renderDeviceRow(device, key, idx, fields) {
   const summary = el('summary', {}, [el('span', { text: title }), el('span', { text: 'Edit' })]);
   details.appendChild(summary);
   const row = el('div', { class: 'device-body' });
-  fields.forEach(([field, label]) => {
-    row.appendChild(el('label', { text: label }));
+  fields.forEach(({ field, label, required, help }) => {
+    const labelNode = el('label', { text: label });
+    if (required) labelNode.appendChild(el('span', { class: 'req', text: '*' }));
+    row.appendChild(labelNode);
     if (field === 'stateless_trigger_on') {
       row.appendChild(selectInput(device[field] || 'on', [
         { value: 'on', label: 'Trigger on On' },
@@ -49,14 +56,17 @@ function renderDeviceRow(device, key, idx, fields) {
     } else {
       row.appendChild(textInput(device[field], (v) => { state[key][idx][field] = v; }));
     }
+    if (help) row.appendChild(el('div', { class: 'field-help', text: help }));
   });
-  row.appendChild(el('button', { class: 'btn btn-remove', text: 'Remove Device', onclick: () => { state[key].splice(idx, 1); render(); } }));
+  row.appendChild(el('button', { class: 'btn btn-remove', text: 'Remove Device', onclick: () => { state[key].splice(idx, 1); openSections[key] = true; render(); } }));
   details.appendChild(row);
   return details;
 }
 
 function renderSection(title, description, key, fields) {
-  const section = el('details', { class: 'section' });
+  const sectionProps = { class: 'section', ontoggle: (e) => { openSections[key] = e.target.open; } };
+  if (openSections[key]) sectionProps.open = '';
+  const section = el('details', sectionProps);
   section.appendChild(el('summary', { text: title }));
   const content = el('div', { class: 'section-content' });
   content.appendChild(el('div', { class: 'section-desc', text: description }));
@@ -66,7 +76,7 @@ function renderSection(title, description, key, fields) {
   content.appendChild(el('button', {
     class: 'btn btn-add',
     text: `Add ${title.slice(0, -1)} Device`,
-    onclick: () => { state[key].push({}); render(); },
+    onclick: () => { state[key].push({}); openSections[key] = true; render(); },
   }));
   section.appendChild(content);
 
@@ -78,17 +88,26 @@ function render() {
   app.innerHTML = '';
 
   app.appendChild(renderSection('On/Off Switches', 'Configure standard ON/OFF switches in this section.', 'on_off_switches', [
-    ['name', 'Accessory Name'], ['on', 'ON Command'], ['off', 'OFF Command'], ['state', 'State Command'], ['fileState', 'State File Path'],
+    { field: 'name', label: 'Accessory Name', required: true, help: 'Name shown in Home app for this switch.' },
+    { field: 'on', label: 'ON Command', required: true, help: 'Shell command/script executed when turning the switch ON.' },
+    { field: 'off', label: 'OFF Command', required: true, help: 'Shell command/script executed when turning the switch OFF.' },
+    { field: 'state', label: 'State Command', required: false, help: 'Command that prints current state value (for example true/false). Required if State File Path is not set.' },
+    { field: 'fileState', label: 'State File Path', required: false, help: 'If set, ON/OFF state is determined by file existence. Required if State Command is not set.' },
   ]));
 
   app.appendChild(renderSection('Stateless Switches', 'Configure stateless switch device in this section.', 'stateless_switches', [
-    ['name', 'Accessory Name'], ['trigger', 'Trigger Command'], ['auto_reset_ms', 'Auto Reset Delay (ms)'], ['stateless_trigger_on', 'Stateless Trigger On (on/off)'],
+    { field: 'name', label: 'Accessory Name', required: true, help: 'Name shown in Home app for this trigger switch.' },
+    { field: 'trigger', label: 'Trigger Command', required: true, help: 'Command/script executed when the stateless trigger is activated.' },
+    { field: 'auto_reset_ms', label: 'Auto Reset Delay (ms)', required: false, help: 'Delay in milliseconds before the switch tile automatically resets.' },
+    { field: 'stateless_trigger_on', label: 'Stateless Trigger On', required: false, help: 'Choose whether trigger runs on ON or OFF action.' },
   ]));
 
   if ((state.devices || []).length > 0) {
     app.appendChild(renderSection('Legacy Devices Config', 'Legacy compatibility list. Entries are treated as On/Off switches.', 'devices', [
       ['name', 'Accessory Name'], ['on', 'ON Command'], ['off', 'OFF Command'], ['state', 'State Command'], ['fileState', 'State File Path'],
     ]));
+  } else {
+    openSections.devices = false;
   }
 }
 
@@ -103,6 +122,9 @@ async function load() {
   state.on_off_switches = Array.isArray(pluginConfig.on_off_switches) ? pluginConfig.on_off_switches : [];
   state.stateless_switches = Array.isArray(pluginConfig.stateless_switches) ? pluginConfig.stateless_switches : [];
   state.devices = Array.isArray(pluginConfig.devices) ? pluginConfig.devices : [];
+  openSections.on_off_switches = state.on_off_switches.length > 0;
+  openSections.stateless_switches = state.stateless_switches.length > 0;
+  openSections.devices = state.devices.length > 0;
 
   render();
 }
