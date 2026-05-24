@@ -1,6 +1,6 @@
 {
   "name": "homebridge-script2",
-  "version": "0.4.3-beta.10",
+  "version": "0.4.3-beta.28",
   "license": "MIT",
   "description": "script plugin for homebridge: https://github.com/nfarina/homebridge",
   "keywords": [
@@ -16,6 +16,7 @@
     "node": ">=20.19.0"
   },
   "dependencies": {
+    "@homebridge/plugin-ui-utils": "^2.0.1",
     "chokidar": "5.0.0"
   }
 }
