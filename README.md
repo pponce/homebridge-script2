@@ -59,8 +59,9 @@ Name | Value | Required | Notes
 `stateless_trigger_on` | `on/off` | no (default `on`) | `on` triggers on ON; `off` triggers on OFF (tile defaults to ON)
 `unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
 
-### State script behavior
+### State script behavior for on_off_switches
 - The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
+- on_value should be set to a string and use quotes. Default value is `"true"`.
 - If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
 - If using fileState your on and off scripts should create the fileState file and delete the fileState file for homekit to see the changes.
 - If a script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
