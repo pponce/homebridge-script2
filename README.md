@@ -126,8 +126,6 @@ If your Homebridge service runs as another user, replace `homebridge` with that 
 
 ### How can I confirm which user Homebridge runs as?
 
-On systemd installs:
-
 ```bash
 systemctl cat homebridge | grep -i '^User='
 ```
