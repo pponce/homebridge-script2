@@ -56,7 +56,7 @@ function renderDeviceRow(device, key, idx, fields) {
 }
 
 function renderSection(title, description, key, fields) {
-  const section = el('details', { class: 'section', open: '' });
+  const section = el('details', { class: 'section' });
   section.appendChild(el('summary', { text: title }));
   const content = el('div', { class: 'section-content' });
   content.appendChild(el('div', { class: 'section-desc', text: description }));
@@ -94,7 +94,11 @@ function render() {
 
 async function load() {
   const config = await homebridge.getPluginConfig();
-  pluginConfig = (config && config[0]) ? config[0] : {};
+  if (Array.isArray(config)) {
+    pluginConfig = config.find((entry) => entry && entry.platform === 'Script2Platform') || config[0] || {};
+  } else {
+    pluginConfig = {};
+  }
 
   state.on_off_switches = Array.isArray(pluginConfig.on_off_switches) ? pluginConfig.on_off_switches : [];
   state.stateless_switches = Array.isArray(pluginConfig.stateless_switches) ? pluginConfig.stateless_switches : [];
