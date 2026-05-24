@@ -109,6 +109,7 @@ function render() {
   } else {
     openSections.devices = false;
   }
+  updateValidationPanel();
 }
 
 async function load() {
@@ -150,9 +151,25 @@ function validateRequiredFields() {
   return errors;
 }
 
+function updateValidationPanel() {
+  const errors = validateRequiredFields();
+  const panel = document.getElementById('validation');
+  if (!panel) return;
+
+  if (errors.length === 0) {
+    panel.className = 'validation ok';
+    panel.textContent = '✓ Configuration is valid.';
+    return;
+  }
+
+  panel.className = 'validation';
+  panel.innerHTML = `⚠ Validation errors (${errors.length})<ul>${errors.map((e) => `<li>${e}</li>`).join('')}</ul>`;
+}
+
 async function save() {
   const errors = validateRequiredFields();
   if (errors.length > 0) {
+    updateValidationPanel();
     window.alert(`Please fix required fields before saving:\n\n- ${errors.join('\n- ')}`);
     return;
   }

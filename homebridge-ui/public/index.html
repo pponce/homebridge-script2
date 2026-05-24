@@ -43,6 +43,9 @@
     #saveBtn:hover { background: #16a34a; }
     .btn-remove { background: #f3f4f6; color: #111827; margin-top: 12px; }
     .actions { margin-top: 20px; }
+    .validation { margin-top: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid #7f1d1d; background: #450a0a; color: #fecaca; font-size: 13px; }
+    .validation.ok { border-color: #14532d; background: #052e16; color: #bbf7d0; }
+    .validation ul { margin: 6px 0 0 18px; padding: 0; }
   </style>
 </head>
 <body>
@@ -52,6 +55,7 @@
     <div id="app"></div>
     <div class="actions">
       <button id="saveBtn" class="btn">Save</button>
+      <div id="validation" class="validation ok">✓ Configuration is valid.</div>
     </div>
   </div>
   <script src="index.js"></script>
