@@ -79,3 +79,33 @@ Use the newer platform format with:
 - `stateless_switches`
 
 It provides a better UI and clearer configuration intent.
+
+## Migration guidance
+
+### From legacy platform `devices` to grouped sections
+
+This migration is usually smoother if names stay the same.
+
+- Homebridge accessory UUIDs in this plugin are name-based in platform mode (`homebridge-script2:<name>`).
+- If you move a legacy `devices` item into `on_off_switches` or `stateless_switches` and keep the **exact same `name`**, Homebridge usually preserves accessory identity.
+- If you rename, HomeKit treats it as a new accessory identity.
+
+Recommended steps:
+1. Stop Homebridge.
+2. Move one legacy `devices` item at a time into `on_off_switches` or `stateless_switches`.
+3. Keep the exact same `name`.
+4. Remove the moved entry from `devices`.
+5. Start Homebridge and verify in Home app.
+
+### From legacy accessory mode (`accessories`) to platform mode
+
+Treat this as a **fresh migration**.
+
+- Accessory mode and platform mode are different registration paths.
+- In practice, many users will need to re-place accessories into rooms and re-link scenes/automations after migration.
+
+Recommended steps:
+1. Backup `config.json`.
+2. Remove legacy `accessories` entries for Script2.
+3. Add a new `platforms` entry with `on_off_switches` / `stateless_switches`.
+4. Restart Homebridge and re-check Home app placement/scenes/automations.

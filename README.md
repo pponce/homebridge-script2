@@ -15,7 +15,7 @@ Use **platform mode** with:
 > - platform `devices` array
 > - accessory-mode `accessories` entries
 >
-> See **[LEGACY.md](./LEGACY.md)** for legacy field details and examples.
+> See **[LEGACY.md](./LEGACY.md)** for legacy field details, examples, and migration guidance.
 
 ## Homebridge UI Configuration
 
@@ -73,6 +73,13 @@ Name | Value | Required | Notes
         "off": "/opt/scripts/off.sh 1",
         "state": "/opt/scripts/state.sh 1",
         "on_value": "true"
+      },
+      {
+        "name": "Outlet 2",
+        "on": "/opt/scripts/on.sh 2",
+        "off": "/opt/scripts/off.sh 2",
+        "fileState": "/opt/scripts/outlet2.flag",
+        "polling": false
       }
     ],
     "stateless_switches": [
@@ -81,41 +88,17 @@ Name | Value | Required | Notes
         "trigger": "/opt/scripts/reboot.sh 1",
         "auto_reset_ms": 500,
         "stateless_trigger_on": "off"
+      },
+      {
+        "name": "Outlet 2 Reboot",
+        "trigger": "/opt/scripts/reboot.sh 2",
+        "auto_reset_ms": 700,
+        "stateless_trigger_on": "on"
       }
     ]
   }
 ]
 ```
-
-## Migration guidance
-
-### From legacy platform `devices` to new grouped sections
-
-This migration is usually smooth if names stay the same.
-
-- Homebridge accessory UUIDs in this plugin are name-based in platform mode (`homebridge-script2:<name>`).
-- If you move a legacy `devices` item into `on_off_switches` or `stateless_switches` and keep the **exact same `name`**, Homebridge usually preserves accessory identity.
-- If you rename, HomeKit treats it as a new accessory.
-
-Recommended steps:
-1. Stop Homebridge.
-2. Move one legacy `devices` item at a time into `on_off_switches` or `stateless_switches`.
-3. Keep the exact same `name`.
-4. Remove the moved entry from `devices`.
-5. Start Homebridge and verify in Home app.
-
-### From legacy accessory mode (`accessories`) to platform mode
-
-Treat this as a **fresh migration**.
-
-- Accessory mode and platform mode are different registration paths.
-- In practice, many users will need to re-place accessories into rooms and re-link scenes/automations after migration.
-
-Recommended steps:
-1. Backup `config.json`.
-2. Remove legacy `accessories` entries for Script2.
-3. Add new `platforms` entry with `on_off_switches` / `stateless_switches`.
-4. Restart Homebridge and re-check Home app placement/scenes/automations.
 
 ## Installation
 
