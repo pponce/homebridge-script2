@@ -11,7 +11,7 @@ Original plugin [homebridge-script](https://github.com/xxcombat/homebridge-scrip
 This plugin now includes a **Homebridge Config UI X** schema (`config.schema.json`) so you can add and manage `Script2Platform` devices directly from the UI instead of editing raw JSON manually. See below about upgrading to platform mode. Only use the user friendly Plugin Config UI X option if using the dynamic platform mode.
 
 - In Homebridge UI, go to **Plugins → homebridge-script2 → Plugin Config**.
-- Use the **Devices** list to add each Script2 switch/accessory and fill in commands/paths.
+- Use the **On/Off Switches** and **Stateless Switches** sections to add devices and fill in commands/paths.
 - Save and restart Homebridge when prompted.
 
 ## Platform mode
@@ -30,28 +30,41 @@ Homebridge Config UI schema is **platform-only** (dynamic platform) for reliable
 Because this plugin depends on external scripts and shell execution, it is highly recommended to run it in a dedicated **Child Bridge** for reliability and isolation.
 
 ### Platform configuration parameters
-Each entry in `devices` supports the same options as accessory mode:
+Recommended configuration is split into two arrays:
 
-Name            | Value         | Required                                    | Notes
---------------- | ------------- | ------------------------------------------- | -------------
-`name`          | _(custom)_    | yes                                         | Name of accessory that will appear in Home app and is required
-`on`            | _(custom)_    | yes                                         | Script/command to execute the on action
-`off`           | _(custom)_    | yes                                         | Script/command to execute the off action
+| Name | Value | Required | Notes |
+| --- | --- | --- | --- |
+| `on_off_switches` | array | no | Main section for standard ON/OFF switches |
+| `stateless_switches` | array | no | Main section for one-shot trigger switches |
+| `devices` | array | no (legacy only) | Legacy compatibility list (ON/OFF entries) |
 
-`device_type`  | `switch/stateless` | no (default `switch`)            | `switch` = normal ON/OFF behavior, `stateless` = single-action trigger
-`trigger`      | _(custom)_         | required for `stateless` devices | Script/command to execute when stateless trigger is pressed
-`auto_reset_ms`| integer ms         | no (default `500`)               | Delay before stateless trigger resets to its default state in Home app
-`stateless_trigger_on` | `on/off` | no (default `on`) | Stateless trigger edge: `on` triggers when toggled ON; `off` triggers when toggled OFF and defaults tile to ON
-`fileState`     | _(custom)_    | fileState or state is required (see note)   | File used as current state flag
-`state`         | _(custom)_    | fileState or state is required (see note)   | Script to determine current state
-`on_value`      | _(custom)_    | no* (default set to `"true"`)             | Value matched against `state` command output
-`polling`       | `true/false`  | no (default `false`)                       | Enables periodic polling for `state` command mode only
-`polling_interval` | integer ms | no (default `5000`)                        | Poll interval in milliseconds when `polling` is enabled
-`polling_on_start` | `true/false` | no (default `true`)                     | Immediately run a state poll when Homebridge starts
-`state_cache_ttl_ms` | integer ms | no (default `1000`)                     | Cache TTL for `state` reads to avoid duplicate script executions on burst GET requests
-`reset_state_cache_on_set` | `true/false` | no (default `false`)               | When enabled, successful manual ON/OFF actions reset the state cache timer and seed it with the set state
-`fail_on_state_exit_code` | `true/false` | no (default `false`)               | When enabled, non-zero exit code from the `state` command is treated as an error for that read request
-`unique_serial` | _(custom)_    | no (default set to `"Script2 Serial number"`) | Unique serial per device is recommended
+#### `on_off_switches` item parameters
+
+Name | Value | Required | Notes
+--- | --- | --- | ---
+`name` | _(custom)_ | yes | Accessory name shown in Home app
+`on` | _(custom)_ | yes | Script/command to execute the ON action
+`off` | _(custom)_ | yes | Script/command to execute the OFF action
+`fileState` | _(custom)_ | fileState or state | File flag used as current state; if set, it overrides `state`
+`state` | _(custom)_ | fileState or state | Script to determine current ON/OFF state
+`on_value` | _(custom)_ | no (default `"true"`) | Value matched against normalized `state` output
+`polling` | `true/false` | no (default `false`) | Enables periodic polling for `state` mode
+`polling_interval` | integer ms | no (default `5000`) | Poll interval when `polling` is enabled
+`polling_on_start` | `true/false` | no (default `true`) | Immediately runs state poll on startup
+`state_cache_ttl_ms` | integer ms | no (default `1000`) | Cache TTL for burst reads
+`reset_state_cache_on_set` | `true/false` | no (default `false`) | Resets/seeds state cache after successful manual set
+`fail_on_state_exit_code` | `true/false` | no (default `false`) | Treat non-zero `state` exit code as read error
+`unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
+
+#### `stateless_switches` item parameters
+
+Name | Value | Required | Notes
+--- | --- | --- | ---
+`name` | _(custom)_ | yes | Accessory name shown in Home app
+`trigger` | _(custom)_ | yes | Script/command to execute trigger action
+`auto_reset_ms` | integer ms | no | Delay before Home tile auto-resets
+`stateless_trigger_on` | `on/off` | no (default `on`) | `on` triggers on ON; `off` triggers on OFF (tile defaults to ON)
+`unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
 
 ### Platform configuration example
 
@@ -60,7 +73,7 @@ Name            | Value         | Required                                    | 
   {
     "platform": "Script2Platform",
     "name": "Script2",
-    "devices": [
+    "on_off_switches": [
       {
         "name": "RPC3 Socket 1",
         "on": "/var/homebridge/rpc3control/on.sh 1",
@@ -76,7 +89,8 @@ Name            | Value         | Required                                    | 
         "fail_on_state_exit_code": false,
         "unique_serial": "platform-1234567"
       }
-    ]
+    ],
+    "stateless_switches": []
   }
 ]
 ```
@@ -179,51 +193,21 @@ Example:
 
 
 ### Stateless trigger mode
-- Set `device_type` to `stateless` to create a single-action trigger accessory suitable for actions like outlet reboot.
-- In stateless mode, `trigger` runs on the configured edge via `stateless_trigger_on` (`on` by default).
-- `stateless_trigger_on: "on"`: press ON to trigger, then auto-reset to OFF.
-- `stateless_trigger_on: "off"`: press OFF to trigger, then auto-reset to ON (default tile state is ON).
-- Stateful options (`state`, `fileState`, `polling`, `on_value`) are ignored for stateless devices.
+- Configure trigger accessories in `stateless_switches`.
+- `stateless_trigger_on: "on"` (default): press ON to run trigger, then auto-reset to OFF.
+- `stateless_trigger_on: "off"`: press OFF to run trigger, then auto-reset to ON (default tile state ON).
+- No `none` mode is provided.
 
 Example (single stateless device object):
 
 ```json
 {
   "name": "RPC3 Outlet 1 Reboot",
-  "device_type": "stateless",
   "trigger": "/var/homebridge/rpc3control/reboot.sh 1",
   "auto_reset_ms": 500,
   "stateless_trigger_on": "off",
   "unique_serial": "rpc3-outlet1-reboot"
 }
-```
-
-Example (mixed platform with stateful + stateless in one `devices` list):
-
-```json
-"platforms": [
-  {
-    "platform": "Script2Platform",
-    "name": "Script2",
-    "devices": [
-      {
-        "name": "Rack PDU Outlet 1",
-        "device_type": "switch",
-        "on": "/var/homebridge/rpc3control/on.sh 1",
-        "off": "/var/homebridge/rpc3control/off.sh 1",
-        "state": "/var/homebridge/rpc3control/state.sh 1",
-        "on_value": "true"
-      },
-      {
-        "name": "Rack PDU Outlet 1 Reboot",
-        "device_type": "stateless",
-        "trigger": "/var/homebridge/rpc3control/reboot.sh 1",
-        "auto_reset_ms": 500,
-        "stateless_trigger_on": "off"
-      }
-    ]
-  }
-]
 ```
 
 ## Installation
@@ -234,6 +218,27 @@ Example (mixed platform with stateful + stateless in one `devices` list):
 3. Update your configuration file. See examples below that show the plugin working by using filestate for current state check as well as an example using state.sh script for current state check.
 4. Make sure scripts have been made executable (chmod +x scriptname.sh) and also accessible by the homebridge user. 
 
+
+### Legacy dynamic platform example (`platforms` with legacy `devices` list)
+
+```json
+"platforms": [
+  {
+    "platform": "Script2Platform",
+    "name": "Script2",
+    "devices": [
+      {
+        "name": "RPC3 Socket 1",
+        "on": "/var/homebridge/rpc3control/on.sh 1",
+        "off": "/var/homebridge/rpc3control/off.sh 1",
+        "state": "/var/homebridge/rpc3control/state.sh 1",
+        "on_value": "true",
+        "unique_serial": "legacy-platform-1234567"
+      }
+    ]
+  }
+]
+```
 
 ## Legacy accessory mode (still supported)
 
@@ -472,4 +477,3 @@ Recommended migration steps:
 Do users need to remove old devices from HomeKit?
 - **Usually no**, if the name is unchanged during migration.
 - **Yes**, only if you intentionally rename accessories (name change = new UUID/new HomeKit accessory identity).
-
