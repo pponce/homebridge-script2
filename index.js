@@ -20,6 +20,53 @@ module.exports = function (homebridge) {
   homebridge.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, Script2Platform, true);
 };
 
+
+function sanitizeDeviceConfig(deviceConfig) {
+  const sanitized = { ...(deviceConfig || {}) };
+  const deviceType = sanitized["device_type"] === "stateless" ? "stateless" : "switch";
+
+  if (deviceType === "stateless") {
+    delete sanitized["on"];
+    delete sanitized["off"];
+    delete sanitized["fileState"];
+    delete sanitized["state"];
+    delete sanitized["on_value"];
+    delete sanitized["polling"];
+    delete sanitized["polling_interval"];
+    delete sanitized["polling_on_start"];
+    delete sanitized["state_cache_ttl_ms"];
+    delete sanitized["reset_state_cache_on_set"];
+    delete sanitized["fail_on_state_exit_code"];
+  } else {
+    delete sanitized["trigger"];
+    delete sanitized["auto_reset_ms"];
+    delete sanitized["stateless_trigger_on"];
+  }
+
+  return sanitized;
+}
+
+
+function getConfiguredDevices(config) {
+  const legacyDevices = Array.isArray(config?.devices) ? config.devices : [];
+  const statefulDevices = Array.isArray(config?.on_off_switches)
+    ? config.on_off_switches.map((device) => ({ ...device, device_type: "switch" }))
+    : Array.isArray(config?.["On/Off Switches"])
+      ? config["On/Off Switches"].map((device) => ({ ...device, device_type: "switch" }))
+      : Array.isArray(config?.stateful_devices)
+        ? config.stateful_devices.map((device) => ({ ...device, device_type: "switch" }))
+        : [];
+  const statelessDevices = Array.isArray(config?.stateless_switches)
+    ? config.stateless_switches.map((device) => ({ ...device, device_type: "stateless" }))
+    : Array.isArray(config?.["Stateless Switches"])
+      ? config["Stateless Switches"].map((device) => ({ ...device, device_type: "stateless" }))
+      : Array.isArray(config?.stateless_devices)
+        ? config.stateless_devices.map((device) => ({ ...device, device_type: "stateless" }))
+        : [];
+
+  return [...legacyDevices, ...statefulDevices, ...statelessDevices];
+}
+
 class Script2Platform {
   constructor(log, config, api) {
     this.log = log;
@@ -39,7 +86,7 @@ class Script2Platform {
   }
 
   discoverDevices() {
-    const devices = Array.isArray(this.config.devices) ? this.config.devices : [];
+    const devices = getConfiguredDevices(this.config);
 
     if (devices.length === 0) {
       this.log.warn("No devices configured for Script2Platform.");
@@ -48,10 +95,11 @@ class Script2Platform {
 
     const configuredUuids = new Set();
 
-    for (const deviceConfig of devices) {
+    for (const rawDeviceConfig of devices) {
+      const deviceConfig = sanitizeDeviceConfig(rawDeviceConfig);
       const name = deviceConfig?.name;
       if (!name) {
-        this.log.error("Skipping platform device with missing required 'name'.");
+        this.log.debug("Ignoring incomplete device entry without name.");
         continue;
       }
 
@@ -114,6 +162,10 @@ function Script2DeviceLogic(log, config) {
   this.name = config["name"];
   this.onCommand = config["on"];
   this.offCommand = config["off"];
+  this.deviceType = config["device_type"] === "stateless" ? "stateless" : "switch";
+  this.triggerCommand = config["trigger"] || config["on"] || false;
+  this.autoResetMs = Number(config["auto_reset_ms"] || 500);
+  this.statelessTriggerOn = config["stateless_trigger_on"] === "off" ? "off" : "on";
   this.stateCommand = config["state"] || false;
   this.onValue = config["on_value"] || "true";
   this.fileState = config["fileState"] || false;
@@ -346,6 +398,45 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
   callback(new Error("Must set config value for fileState or state."), null);
 };
 
+Script2DeviceLogic.prototype.setStatelessTrigger = function (powerOn, callback) {
+  const triggerOnOnAction = this.statelessTriggerOn !== "off";
+  const shouldTrigger = triggerOnOnAction ? powerOn : !powerOn;
+  const resetState = triggerOnOnAction ? false : true;
+
+  if (!shouldTrigger) {
+    callback(null, powerOn);
+    return;
+  }
+
+  const command = this.triggerCommand;
+  if (!command) {
+    callback(new Error("Missing required trigger command for stateless device."), null);
+    return;
+  }
+
+  this.log.debug(`Triggering ${this.name} stateless action...`);
+  this.log.debug(`Executing command: ${command}`);
+  exec(command, (error, stdout, stderr) => {
+    if (error || stderr) {
+      const diagnostics = this.formatCommandDiagnostics("trigger", command, error, stdout, stderr);
+      const errMessage = `Stateless trigger returned an error. ${diagnostics}`;
+      this.log.error(errMessage);
+      callback(new Error(errMessage), null);
+      return;
+    }
+
+    this.log.info(`Triggered ${this.name} stateless action`);
+    callback(null, shouldTrigger);
+
+    const resetDelay = Number.isFinite(this.autoResetMs) && this.autoResetMs >= 0 ? this.autoResetMs : 500;
+    setTimeout(() => {
+      if (this.switchService) {
+        this.switchService.updateCharacteristic(Characteristic.On, resetState);
+      }
+    }, resetDelay);
+  });
+};
+
 Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
   const informationService =
     platformAccessory.getService(Service.AccessoryInformation) ||
@@ -365,9 +456,17 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
 
   const characteristic = switchService.getCharacteristic(Characteristic.On);
   characteristic.removeAllListeners("set");
-  characteristic.on("set", this.setState.bind(this));
 
   characteristic.removeAllListeners("get");
+
+  if (this.deviceType === "stateless") {
+    characteristic.on("set", this.setStatelessTrigger.bind(this));
+    characteristic.on("get", (callback) => callback(null, this.statelessTriggerOn === "off"));
+    return;
+  }
+
+  characteristic.on("set", this.setState.bind(this));
+
   if (this.stateCommand || this.fileState) {
     characteristic.on("get", (callback) => this.getState(callback, "homekit-get"));
   }

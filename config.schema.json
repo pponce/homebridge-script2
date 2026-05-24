@@ -1,6 +1,8 @@
 {
   "pluginAlias": "Script2Platform",
   "pluginType": "platform",
+  "customUi": true,
+  "customUiPath": "homebridge-ui",
   "singular": true,
   "headerDisplay": "## homebridge-script2\nConfigure Script2 in Homebridge UI without editing JSON manually.",
   "schema": {
@@ -20,29 +22,32 @@
         "required": true,
         "description": "Display name for this platform instance in Homebridge."
       },
-      "devices": {
-        "title": "Devices",
+      "on_off_switches": {
+        "title": "On/Off Switches",
         "type": "array",
-        "description": "Define one or more Script2 accessories managed by this platform.",
+        "minItems": 0,
+        "description": "Configure standard ON/OFF switches in this section.",
         "items": {
-          "title": "Device",
+          "title": "{{ value.name || \"New Stateful Switch\" }}",
           "type": "object",
           "properties": {
             "name": {
               "title": "Accessory Name",
+              "type": "string"
+            },
+            "unique_serial": {
+              "title": "Unique Serial",
               "type": "string",
-              "required": true
+              "description": "Recommended unique serial per device for HomeKit apps."
             },
             "on": {
               "title": "ON Command",
               "type": "string",
-              "required": true,
               "placeholder": "/var/homebridge/scripts/on.sh 1"
             },
             "off": {
               "title": "OFF Command",
               "type": "string",
-              "required": true,
               "placeholder": "/var/homebridge/scripts/off.sh 1"
             },
             "fileState": {
@@ -89,23 +94,239 @@
             "reset_state_cache_on_set": {
               "title": "Reset State Cache on Manual Set",
               "type": "boolean",
-              "default": false,
-              "description": "When enabled, successful HomeKit ON/OFF actions reset the state cache TTL to the newly set state."
+              "default": false
             },
             "fail_on_state_exit_code": {
               "title": "Fail on Non-zero State Exit Code",
               "type": "boolean",
-              "default": false,
-              "description": "When enabled, a non-zero exit code from the state command is treated as an error and the accessory is marked with a fault until reads recover."
+              "default": false
+            }
+          },
+          "description": "Use Add Device to create entries.",
+          "required": [
+            "name",
+            "on",
+            "off"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "state"
+              ]
+            },
+            {
+              "required": [
+                "fileState"
+              ]
+            }
+          ],
+          "expandable": true,
+          "expanded": false,
+          "form": [
+            "name",
+            "on",
+            "off",
+            "fileState",
+            "state",
+            "on_value",
+            "polling",
+            "polling_interval",
+            "polling_on_start",
+            "state_cache_ttl_ms",
+            "reset_state_cache_on_set",
+            "fail_on_state_exit_code",
+            "unique_serial"
+          ]
+        },
+        "expandable": true,
+        "expanded": false,
+        "default": []
+      },
+      "stateless_switches": {
+        "title": "Stateless Switches",
+        "type": "array",
+        "minItems": 0,
+        "description": "Configure stateless switch device in this section.",
+        "items": {
+          "title": "{{ value.name || \"New Stateless Trigger\" }}",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Accessory Name",
+              "type": "string"
             },
             "unique_serial": {
               "title": "Unique Serial",
               "type": "string",
-              "default": "script2 Serial Number",
               "description": "Recommended unique serial per device for HomeKit apps."
+            },
+            "trigger": {
+              "title": "Trigger Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/reboot.sh 1"
+            },
+            "auto_reset_ms": {
+              "title": "Auto Reset Delay (ms)",
+              "type": "integer",
+              "minimum": 0
+            },
+            "stateless_trigger_on": {
+              "title": "Stateless Trigger On",
+              "type": "string",
+              "default": "on",
+              "description": "Trigger on On: runs the command when the switch is turned ON. Trigger on Off: runs the command when turned OFF (tile defaults to ON).",
+              "oneOf": [
+                {
+                  "title": "Trigger on On",
+                  "const": "on"
+                },
+                {
+                  "title": "Trigger on Off",
+                  "const": "off"
+                }
+              ]
             }
-          }
-        }
+          },
+          "description": "Use Add Device to create entries.",
+          "required": [
+            "name",
+            "trigger"
+          ],
+          "expandable": true,
+          "expanded": false,
+          "form": [
+            "name",
+            "trigger",
+            "auto_reset_ms",
+            "stateless_trigger_on",
+            "unique_serial"
+          ]
+        },
+        "expandable": true,
+        "expanded": false,
+        "default": []
+      },
+      "devices": {
+        "title": "Legacy Devices Config",
+        "type": "array",
+        "minItems": 0,
+        "description": "Legacy compatibility list. Entries are treated as On/Off switches.",
+        "condition": {
+          "functionBody": "return Array.isArray(model.devices) && model.devices.length > 0;"
+        },
+        "items": {
+          "title": "{{ value.name || \"New Stateful Switch\" }}",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Accessory Name",
+              "type": "string"
+            },
+            "unique_serial": {
+              "title": "Unique Serial",
+              "type": "string",
+              "description": "Recommended unique serial per device for HomeKit apps."
+            },
+            "on": {
+              "title": "ON Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/on.sh 1"
+            },
+            "off": {
+              "title": "OFF Command",
+              "type": "string",
+              "placeholder": "/var/homebridge/scripts/off.sh 1"
+            },
+            "fileState": {
+              "title": "State File Path",
+              "type": "string",
+              "description": "If set, the on/off state is based on file existence and overrides state command.",
+              "placeholder": "/var/homebridge/scripts/device1.flag"
+            },
+            "state": {
+              "title": "State Command",
+              "type": "string",
+              "description": "Command that prints current state (for example: true/false)."
+            },
+            "on_value": {
+              "title": "ON Match Value",
+              "type": "string",
+              "default": "true",
+              "description": "State command output value interpreted as ON."
+            },
+            "polling": {
+              "title": "Enable Polling",
+              "type": "boolean",
+              "default": false,
+              "description": "Poll state command periodically (ignored when State File Path is set)."
+            },
+            "polling_interval": {
+              "title": "Polling Interval (ms)",
+              "type": "integer",
+              "default": 5000,
+              "minimum": 250
+            },
+            "polling_on_start": {
+              "title": "Poll Immediately on Startup",
+              "type": "boolean",
+              "default": true
+            },
+            "state_cache_ttl_ms": {
+              "title": "State Cache TTL (ms)",
+              "type": "integer",
+              "default": 1000,
+              "minimum": 0,
+              "description": "Short cache for burst reads to avoid duplicate command execution."
+            },
+            "reset_state_cache_on_set": {
+              "title": "Reset State Cache on Manual Set",
+              "type": "boolean",
+              "default": false
+            },
+            "fail_on_state_exit_code": {
+              "title": "Fail on Non-zero State Exit Code",
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "description": "Use Add Device to create entries.",
+          "required": [
+            "name",
+            "on",
+            "off"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "state"
+              ]
+            },
+            {
+              "required": [
+                "fileState"
+              ]
+            }
+          ],
+          "expandable": true,
+          "expanded": false,
+          "form": [
+            "name",
+            "on",
+            "off",
+            "fileState",
+            "state",
+            "on_value",
+            "polling",
+            "polling_interval",
+            "polling_on_start",
+            "state_cache_ttl_ms",
+            "reset_state_cache_on_set",
+            "fail_on_state_exit_code",
+            "unique_serial"
+          ]
+        },
+        "expandable": true,
+        "expanded": false
       }
     }
   }
