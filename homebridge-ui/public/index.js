@@ -120,9 +120,12 @@ function renderSection(title, description, key, fields) {
 
   (state[key] || []).forEach((d, i) => content.appendChild(renderDeviceRow(d, key, i, fields)));
 
+  const addLabel = key === 'stateless_switches' ? 'Add Stateless Switch Device'
+    : key === 'on_off_switches' ? 'Add On/Off Switch Device'
+      : 'Add Legacy Switch Device';
   content.appendChild(el('button', {
     class: 'btn btn-add',
-    text: `Add ${title.slice(0, -1)} Device`,
+    text: addLabel,
     onclick: () => { state[key].push({}); openSections[key] = true; render(); },
   }));
   section.appendChild(content);
