@@ -60,7 +60,7 @@ Name | Value | Required | Notes
 `unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
 
 ### State script behavior for on_off_switches
-- The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
+- The `state` script output is normalized to lowercase and compared against `on_value` (default `"true"`).
 - on_value should be set to a string and use quotes. Default value is `"true"`.
 - If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
 - If using fileState your on and off scripts should create the fileState file and delete the fileState file for homekit to see the changes.
