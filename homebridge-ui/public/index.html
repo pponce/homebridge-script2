@@ -22,11 +22,15 @@
     details.section { border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; background: var(--card-2); }
     details.section > summary { list-style: none; cursor: pointer; padding: 14px 16px; font-weight: 700; font-size: 22px; color: var(--text); }
     details.section > summary::-webkit-details-marker { display:none; }
+    details.section > summary::before { content: "▶"; display:inline-block; margin-right:10px; color: var(--muted); transition: transform .15s ease; }
+    details.section[open] > summary::before { transform: rotate(90deg); color: var(--text); }
     .section-content { padding: 0 16px 14px; }
     .section-desc { color: var(--muted); margin: 0 0 10px; }
     details.device { border: 1px solid var(--border); border-radius: 8px; margin: 10px 0; background: #0b1220; }
     details.device > summary { list-style: none; cursor: pointer; padding: 10px 12px; font-weight: 600; display:flex; justify-content:space-between; color: var(--text); }
     details.device > summary::-webkit-details-marker { display:none; }
+    details.device > summary::before { content: "▶"; display:inline-block; margin-right:10px; color: var(--muted); transition: transform .15s ease; }
+    details.device[open] > summary::before { transform: rotate(90deg); color: var(--text); }
     .device-body { padding: 0 12px 12px; }
     label { display:block; margin: 10px 0 4px; font-size: 12px; color:var(--muted); }
     .req { color: #fda4af; margin-left: 4px; font-weight: 700; }

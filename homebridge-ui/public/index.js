@@ -122,14 +122,41 @@ async function load() {
   state.on_off_switches = Array.isArray(pluginConfig.on_off_switches) ? pluginConfig.on_off_switches : [];
   state.stateless_switches = Array.isArray(pluginConfig.stateless_switches) ? pluginConfig.stateless_switches : [];
   state.devices = Array.isArray(pluginConfig.devices) ? pluginConfig.devices : [];
-  openSections.on_off_switches = state.on_off_switches.length > 0;
-  openSections.stateless_switches = state.stateless_switches.length > 0;
-  openSections.devices = state.devices.length > 0;
+  openSections.on_off_switches = false;
+  openSections.stateless_switches = false;
+  openSections.devices = false;
 
   render();
 }
 
+function validateRequiredFields() {
+  const errors = [];
+  (state.on_off_switches || []).forEach((d, i) => {
+    if (!d?.name) errors.push(`On/Off #${i + 1}: Accessory Name is required.`);
+    if (!d?.on) errors.push(`On/Off #${i + 1}: ON Command is required.`);
+    if (!d?.off) errors.push(`On/Off #${i + 1}: OFF Command is required.`);
+    if (!d?.state && !d?.fileState) errors.push(`On/Off #${i + 1}: set State Command or State File Path.`);
+  });
+  (state.stateless_switches || []).forEach((d, i) => {
+    if (!d?.name) errors.push(`Stateless #${i + 1}: Accessory Name is required.`);
+    if (!d?.trigger) errors.push(`Stateless #${i + 1}: Trigger Command is required.`);
+  });
+  (state.devices || []).forEach((d, i) => {
+    if (!d?.name) errors.push(`Legacy #${i + 1}: Accessory Name is required.`);
+    if (!d?.on) errors.push(`Legacy #${i + 1}: ON Command is required.`);
+    if (!d?.off) errors.push(`Legacy #${i + 1}: OFF Command is required.`);
+    if (!d?.state && !d?.fileState) errors.push(`Legacy #${i + 1}: set State Command or State File Path.`);
+  });
+  return errors;
+}
+
 async function save() {
+  const errors = validateRequiredFields();
+  if (errors.length > 0) {
+    window.alert(`Please fix required fields before saving:\n\n- ${errors.join('\n- ')}`);
+    return;
+  }
+
   const next = {
     ...pluginConfig,
     platform: 'Script2Platform',
