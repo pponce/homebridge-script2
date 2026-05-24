@@ -59,6 +59,20 @@ Name | Value | Required | Notes
 `stateless_trigger_on` | `on/off` | no (default `on`) | `on` triggers on ON; `off` triggers on OFF (tile defaults to ON)
 `unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
 
+### State script behavior
+- The `state` script output is normalized to lowercase and compared against `on_value` (default `true`).
+- If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
+- If using fileState your on and off scripts should create the fileState file and delete the fileState file for homekit to see the changes.
+- If a script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state.
+- When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
+- Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications to dynamically update homekit status.
+- When `state_cache_ttl_ms` is greater than `0`, `state` reads are cached briefly to prevent duplicate script executions from burst `get` requests.
+- By default, manual HomeKit ON/OFF actions do **not** reset or extend `state_cache_ttl_ms`. Set `reset_state_cache_on_set` to `true` if you want successful manual set actions to reset the TTL timer and seed the cache with the newly set state.
+- If multiple `get` requests arrive while a state command is already running, they are coalesced and share the same in-flight command result.
+- Each `getState` request writes a single result log entry in the format `GetState <name>: ON/OFF (path: <homekit-get|polling>, source: <state-script|ttl-cache|in-flight-coalesced|file-state>)`. Where Path is telling you if this was the result of a polling request or a homekit initiated get request (out of the plugin's control). And source is where the value was sourced from, state-script execution result, ttl cache, in-flight coalesced, or from file-state.  
+- The TTL cache is per-accessory instance (per configured outlet/switch), not global across all accessories.
+- At startup with `polling_on_start: true`, the first read for each accessory is a cache miss by design, so one state-script execution per accessory is expected before subsequent reads are served from TTL.
+
 ## Platform configuration example (recommended)
 
 ```json
