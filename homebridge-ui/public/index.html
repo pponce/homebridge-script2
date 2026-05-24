@@ -16,7 +16,7 @@
       --accent-2: #22c55e;
     }
     body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: linear-gradient(180deg, #0f172a, #111827); color: var(--text); }
-    .wrap { max-width: 980px; margin: 20px auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .wrap { position: relative; max-width: 980px; margin: 20px auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
     h2 { margin: 0 0 6px; font-size: 34px; font-weight: 600; color: var(--text); }
     .subtitle { color: var(--muted); margin-bottom: 16px; }
     details.section { border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; background: var(--card-2); }
@@ -41,9 +41,9 @@
     .btn-add:hover { background: #db2777; }
     .btn-remove { background: #f3f4f6; color: #111827; margin-top: 12px; }
     .actions {
-      position: fixed;
-      right: 170px;
-      bottom: 26px;
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
       display: flex;
       align-items: center;
       justify-content: flex-end;
@@ -52,7 +52,7 @@
     .status-icon { width: 36px; height: 36px; border-radius: 999px; border: 1px solid transparent; display:flex; align-items:center; justify-content:center; font-weight: 800; cursor: default; user-select:none; }
     .status-icon.ok { background: #052e16; border-color: #14532d; color: #bbf7d0; }
     .status-icon.error { background: #450a0a; border-color: #7f1d1d; color: #fecaca; cursor: pointer; }
-    .validation { margin-top: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid #7f1d1d; background: #450a0a; color: #fecaca; font-size: 13px; display:none; }
+    .validation { margin-top: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid #7f1d1d; background: #450a0a; color: #fecaca; font-size: 13px; display:none; margin-bottom: 64px; }
     .validation ul { margin: 6px 0 0 18px; padding: 0; }
   </style>
 </head>
