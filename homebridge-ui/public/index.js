@@ -211,5 +211,4 @@ async function save() {
   await homebridge.savePluginConfig();
 }
 
-document.getElementById('saveBtn').addEventListener('click', save);
 load();
