@@ -324,8 +324,7 @@
           ]
         },
         "expandable": true,
-        "expanded": false,
-        "default": null
+        "expanded": false
       }
     }
   }
