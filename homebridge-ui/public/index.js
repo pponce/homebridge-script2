@@ -12,6 +12,8 @@ const openSections = {
   stateless_switches: false,
   devices: false,
 };
+let validationErrors = [];
+let showValidationDetails = false;
 
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -152,25 +154,45 @@ function validateRequiredFields() {
 }
 
 function updateValidationPanel() {
-  const errors = validateRequiredFields();
+  validationErrors = validateRequiredFields();
   const panel = document.getElementById('validation');
-  if (!panel) return;
+  const icon = document.getElementById('statusIcon');
+  if (!panel || !icon) return;
 
-  if (errors.length === 0) {
-    panel.className = 'validation ok';
-    panel.textContent = '✓ Configuration is valid.';
+  if (validationErrors.length === 0) {
+    icon.className = 'status-icon ok';
+    icon.textContent = '✓';
+    icon.title = 'Configuration is valid';
+    icon.onclick = null;
+    showValidationDetails = false;
+    panel.style.display = 'none';
+    panel.innerHTML = '';
     return;
   }
 
-  panel.className = 'validation';
-  panel.innerHTML = `⚠ Validation errors (${errors.length})<ul>${errors.map((e) => `<li>${e}</li>`).join('')}</ul>`;
+  icon.className = 'status-icon error';
+  icon.textContent = '⚠';
+  icon.title = `Validation errors (${validationErrors.length}) — click to view`;
+  icon.onclick = () => {
+    showValidationDetails = !showValidationDetails;
+    updateValidationPanel();
+  };
+
+  if (!showValidationDetails) {
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    return;
+  }
+
+  panel.style.display = 'block';
+  panel.innerHTML = `Validation errors (${validationErrors.length})<ul>${validationErrors.map((e) => `<li>${e}</li>`).join('')}</ul>`;
 }
 
 async function save() {
   const errors = validateRequiredFields();
   if (errors.length > 0) {
+    showValidationDetails = true;
     updateValidationPanel();
-    window.alert(`Please fix required fields before saving:\n\n- ${errors.join('\n- ')}`);
     return;
   }
 

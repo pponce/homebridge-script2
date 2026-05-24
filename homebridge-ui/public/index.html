@@ -42,9 +42,11 @@
     .btn-add:hover { background: #db2777; }
     #saveBtn:hover { background: #16a34a; }
     .btn-remove { background: #f3f4f6; color: #111827; margin-top: 12px; }
-    .actions { margin-top: 20px; }
-    .validation { margin-top: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid #7f1d1d; background: #450a0a; color: #fecaca; font-size: 13px; }
-    .validation.ok { border-color: #14532d; background: #052e16; color: #bbf7d0; }
+    .actions { margin-top: 20px; display: flex; align-items: center; gap: 10px; }
+    .status-icon { width: 36px; height: 36px; border-radius: 999px; border: 1px solid transparent; display:flex; align-items:center; justify-content:center; font-weight: 800; cursor: default; user-select:none; }
+    .status-icon.ok { background: #052e16; border-color: #14532d; color: #bbf7d0; }
+    .status-icon.error { background: #450a0a; border-color: #7f1d1d; color: #fecaca; cursor: pointer; }
+    .validation { margin-top: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid #7f1d1d; background: #450a0a; color: #fecaca; font-size: 13px; display:none; }
     .validation ul { margin: 6px 0 0 18px; padding: 0; }
   </style>
 </head>
@@ -54,9 +56,10 @@
     <div class="subtitle">Configure On/Off switches and Stateless Switches</div>
     <div id="app"></div>
     <div class="actions">
+      <div id="statusIcon" class="status-icon ok" title="Configuration is valid">✓</div>
       <button id="saveBtn" class="btn">Save</button>
-      <div id="validation" class="validation ok">✓ Configuration is valid.</div>
     </div>
+    <div id="validation" class="validation"></div>
   </div>
   <script src="index.js"></script>
 </body>
