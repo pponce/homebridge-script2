@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Script2 Config</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --card-2: #1f2937;
+      --border: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #ec4899;
+      --accent-2: #22c55e;
+    }
+    body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: linear-gradient(180deg, #0f172a, #111827); color: var(--text); }
+    .wrap { max-width: 980px; margin: 20px auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    h2 { margin: 0 0 6px; font-size: 34px; font-weight: 600; color: var(--text); }
+    .subtitle { color: var(--muted); margin-bottom: 16px; }
+    details.section { border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; background: var(--card-2); }
+    details.section > summary { list-style: none; cursor: pointer; padding: 14px 16px; font-weight: 700; font-size: 22px; color: var(--text); }
+    details.section > summary::-webkit-details-marker { display:none; }
+    details.section > summary::before { content: "▶"; display:inline-block; margin-right:10px; color: var(--muted); transition: transform .15s ease; }
+    details.section[open] > summary::before { transform: rotate(90deg); color: var(--text); }
+    .section-content { padding: 0 16px 14px; }
+    .section-desc { color: var(--muted); margin: 0 0 10px; }
+    details.device { border: 1px solid var(--border); border-radius: 8px; margin: 10px 0; background: #0b1220; }
+    details.device > summary { list-style: none; cursor: pointer; padding: 10px 12px; font-weight: 600; display:flex; justify-content:space-between; color: var(--text); }
+    details.device > summary::-webkit-details-marker { display:none; }
+    details.device > summary::before { content: "▶"; display:inline-block; margin-right:10px; color: var(--muted); transition: transform .15s ease; }
+    details.device[open] > summary::before { transform: rotate(90deg); color: var(--text); }
+    .device-body { padding: 0 12px 12px; }
+    label { display:block; margin: 10px 0 4px; font-size: 12px; color:var(--muted); }
+    .req { color: #fda4af; margin-left: 4px; font-weight: 700; }
+    .field-help { margin: 3px 0 8px; font-size: 12px; color: var(--muted); }
+    input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; box-sizing: border-box; background:#0f172a; color:var(--text); }
+    .btn { border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; font-weight: 600; }
+    .btn-add, #saveBtn { background: var(--accent); color: #fff; }
+    #saveBtn { background: var(--accent-2); }
+    .btn-add:hover { background: #db2777; }
+    #saveBtn:hover { background: #16a34a; }
+    .btn-remove { background: #f3f4f6; color: #111827; margin-top: 12px; }
+    .actions { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Homebridge Script 2 configuration</h2>
+    <div class="subtitle">Configure On/Off switches and Stateless Switches</div>
+    <div id="app"></div>
+    <div class="actions">
+      <button id="saveBtn" class="btn">Save</button>
+    </div>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>
