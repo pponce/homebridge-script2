@@ -27,11 +27,22 @@ function el(tag, props = {}, children = []) {
 }
 
 function textInput(value, onChange) {
-  return el('input', { value: value || '', oninput: (e) => onChange(e.target.value) });
+  return el('input', {
+    value: value || '',
+    oninput: (e) => {
+      onChange(e.target.value);
+      updateValidationPanel();
+    },
+  });
 }
 
 function selectInput(value, options, onChange) {
-  const node = el('select', { onchange: (e) => onChange(e.target.value) });
+  const node = el('select', {
+    onchange: (e) => {
+      onChange(e.target.value);
+      updateValidationPanel();
+    },
+  });
   options.forEach((opt) => {
     const option = el('option', { value: opt.value, text: opt.label });
     if ((value || '') === opt.value) option.selected = true;
