@@ -5,7 +5,7 @@ Execute custom scripts via HomeKit / Apple Home using Homebridge.
 
 Core of the code written by [@xxcombat](https://github.com/xxcombat/). Original plugin: [homebridge-script](https://github.com/xxcombat/homebridge-script).
 
-## Recommended configuration (current)
+## Recommended configuration
 
 Use **platform mode** with:
 - `on_off_switches` for normal ON/OFF devices
