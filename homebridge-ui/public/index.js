@@ -14,6 +14,40 @@ const openSections = {
 };
 let validationErrors = [];
 let showValidationDetails = false;
+const FIELD_CONFIG = {
+  on_off_switches: {
+    title: 'On/Off Switches',
+    description: 'Configure standard ON/OFF switches in this section.',
+    fields: [
+      { field: 'name', label: 'Accessory Name', required: true, help: 'Name shown in Home app for this switch.' },
+      { field: 'on', label: 'ON Command', required: true, help: 'Shell command/script executed when turning the switch ON.' },
+      { field: 'off', label: 'OFF Command', required: true, help: 'Shell command/script executed when turning the switch OFF.' },
+      { field: 'state', label: 'State Command', required: false, help: 'Command that prints current state value (for example true/false). Required if State File Path is not set.' },
+      { field: 'fileState', label: 'State File Path', required: false, help: 'If set, ON/OFF state is determined by file existence. Required if State Command is not set.' },
+    ],
+  },
+  stateless_switches: {
+    title: 'Stateless Switches',
+    description: 'Configure stateless switch device in this section.',
+    fields: [
+      { field: 'name', label: 'Accessory Name', required: true, help: 'Name shown in Home app for this trigger switch.' },
+      { field: 'trigger', label: 'Trigger Command', required: true, help: 'Command/script executed when the stateless trigger is activated.' },
+      { field: 'auto_reset_ms', label: 'Auto Reset Delay (ms)', required: false, help: 'Delay in milliseconds before the switch tile automatically resets.' },
+      { field: 'stateless_trigger_on', label: 'Stateless Trigger On', required: false, help: 'Choose whether trigger runs on ON or OFF action.' },
+    ],
+  },
+  devices: {
+    title: 'Legacy Devices Config',
+    description: 'Legacy compatibility list. Entries are treated as On/Off switches.',
+    fields: [
+      { field: 'name', label: 'Accessory Name', required: true, help: 'Legacy device accessory name.' },
+      { field: 'on', label: 'ON Command', required: true, help: 'Command executed when turning this legacy switch ON.' },
+      { field: 'off', label: 'OFF Command', required: true, help: 'Command executed when turning this legacy switch OFF.' },
+      { field: 'state', label: 'State Command', required: false, help: 'Required if State File Path is not set.' },
+      { field: 'fileState', label: 'State File Path', required: false, help: 'Required if State Command is not set.' },
+    ],
+  },
+};
 
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -100,25 +134,27 @@ function render() {
   const app = document.getElementById('app');
   app.innerHTML = '';
 
-  app.appendChild(renderSection('On/Off Switches', 'Configure standard ON/OFF switches in this section.', 'on_off_switches', [
-    { field: 'name', label: 'Accessory Name', required: true, help: 'Name shown in Home app for this switch.' },
-    { field: 'on', label: 'ON Command', required: true, help: 'Shell command/script executed when turning the switch ON.' },
-    { field: 'off', label: 'OFF Command', required: true, help: 'Shell command/script executed when turning the switch OFF.' },
-    { field: 'state', label: 'State Command', required: false, help: 'Command that prints current state value (for example true/false). Required if State File Path is not set.' },
-    { field: 'fileState', label: 'State File Path', required: false, help: 'If set, ON/OFF state is determined by file existence. Required if State Command is not set.' },
-  ]));
+  app.appendChild(renderSection(
+    FIELD_CONFIG.on_off_switches.title,
+    FIELD_CONFIG.on_off_switches.description,
+    'on_off_switches',
+    FIELD_CONFIG.on_off_switches.fields,
+  ));
 
-  app.appendChild(renderSection('Stateless Switches', 'Configure stateless switch device in this section.', 'stateless_switches', [
-    { field: 'name', label: 'Accessory Name', required: true, help: 'Name shown in Home app for this trigger switch.' },
-    { field: 'trigger', label: 'Trigger Command', required: true, help: 'Command/script executed when the stateless trigger is activated.' },
-    { field: 'auto_reset_ms', label: 'Auto Reset Delay (ms)', required: false, help: 'Delay in milliseconds before the switch tile automatically resets.' },
-    { field: 'stateless_trigger_on', label: 'Stateless Trigger On', required: false, help: 'Choose whether trigger runs on ON or OFF action.' },
-  ]));
+  app.appendChild(renderSection(
+    FIELD_CONFIG.stateless_switches.title,
+    FIELD_CONFIG.stateless_switches.description,
+    'stateless_switches',
+    FIELD_CONFIG.stateless_switches.fields,
+  ));
 
   if ((state.devices || []).length > 0) {
-    app.appendChild(renderSection('Legacy Devices Config', 'Legacy compatibility list. Entries are treated as On/Off switches.', 'devices', [
-      ['name', 'Accessory Name'], ['on', 'ON Command'], ['off', 'OFF Command'], ['state', 'State Command'], ['fileState', 'State File Path'],
-    ]));
+    app.appendChild(renderSection(
+      FIELD_CONFIG.devices.title,
+      FIELD_CONFIG.devices.description,
+      'devices',
+      FIELD_CONFIG.devices.fields,
+    ));
   } else {
     openSections.devices = false;
   }
@@ -161,6 +197,11 @@ function validateRequiredFields() {
     if (!d?.off) errors.push(`Legacy #${i + 1}: OFF Command is required.`);
     if (!d?.state && !d?.fileState) errors.push(`Legacy #${i + 1}: set State Command or State File Path.`);
   });
+
+  if (!pluginConfig?.name || !String(pluginConfig.name).trim()) {
+    errors.push('Platform Name is required.');
+  }
+
   return errors;
 }
 
