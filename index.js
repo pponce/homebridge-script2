@@ -165,6 +165,7 @@ function Script2DeviceLogic(log, config) {
   this.deviceType = config["device_type"] === "stateless" ? "stateless" : "switch";
   this.triggerCommand = config["trigger"] || config["on"] || false;
   this.autoResetMs = Number(config["auto_reset_ms"] || 500);
+  this.commandTimeout = Number(config["command_timeout"] ?? 10000);
   this.statelessTriggerOn = config["stateless_trigger_on"] === "off" ? "off" : "on";
   this.stateCommand = config["state"] || false;
   this.onValue = config["on_value"] || "true";
@@ -185,6 +186,12 @@ function Script2DeviceLogic(log, config) {
   this.inFlightStateCallbacks = null;
   this.switchService = null;
 
+  if (!Number.isFinite(this.commandTimeout) || this.commandTimeout <= 0) {
+    this.log.warn(
+      `Invalid command_timeout '${this.commandTimeout}' for ${this.name}; using default 10000ms.`
+    );
+  this.commandTimeout = 10000;
+  }
   if (this.fileState && this.stateCommand) {
     this.log.warn(
       `${this.name}: both 'fileState' and 'state' are configured. The state script will not be executed for status changes; the configured file flag will be used instead. To use the state script, remove the 'fileState' config parameter.`
@@ -265,7 +272,7 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
   const command = powerOn ? this.onCommand : this.offCommand;
   const action = powerOn ? "on" : "off";
   this.log.debug(`Executing command: ${command}`);
-  exec(command, (error, stdout, stderr) => {
+  exec(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
     if (error || stderr) {
       const diagnostics = this.formatCommandDiagnostics(action, command, error, stdout, stderr);
       const errMessage = `Set State returned an error. ${diagnostics}`;
@@ -347,7 +354,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
     this.inFlightStateCallbacks = [callback];
     const command = this.stateCommand;
     this.log.debug(`Executing command: ${command}`);
-    exec(command, (error, stdout, stderr) => {
+    exec(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
       const pendingCallbacks = this.inFlightStateCallbacks || [];
       this.inFlightStateCallbacks = null;
       const cleanCommandOutput = stdout.trim().toLowerCase();
@@ -416,7 +423,7 @@ Script2DeviceLogic.prototype.setStatelessTrigger = function (powerOn, callback) 
 
   this.log.debug(`Triggering ${this.name} stateless action...`);
   this.log.debug(`Executing command: ${command}`);
-  exec(command, (error, stdout, stderr) => {
+  exec(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
     if (error || stderr) {
       const diagnostics = this.formatCommandDiagnostics("trigger", command, error, stdout, stderr);
       const errMessage = `Stateless trigger returned an error. ${diagnostics}`;
