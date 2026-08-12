@@ -100,6 +100,13 @@
               "title": "Fail on Non-zero State Exit Code",
               "type": "boolean",
               "default": false
+            },
+            "command_timeout": {
+              "title": "Command Timeout (ms)",
+              "type": "integer",
+              "default": 10000,
+              "minimum": 100,
+              "description": "Maximum time an external command can run before it is terminated."
             }
           },
           "description": "Use Add Device to create entries.",
@@ -135,6 +142,7 @@
             "state_cache_ttl_ms",
             "reset_state_cache_on_set",
             "fail_on_state_exit_code",
+            "command_timeout",
             "unique_serial"
           ]
         },
@@ -170,6 +178,13 @@
               "type": "integer",
               "minimum": 0
             },
+            "command_timeout": {
+              "title": "Command Timeout (ms)",
+              "type": "integer",
+              "default": 10000,
+              "minimum": 100,
+              "description": "Maximum time an external command can run before it is terminated."
+            },
             "stateless_trigger_on": {
               "title": "Stateless Trigger On",
               "type": "string",
@@ -198,6 +213,7 @@
             "name",
             "trigger",
             "auto_reset_ms",
+            "command_timeout",
             "stateless_trigger_on",
             "unique_serial"
           ]
@@ -287,6 +303,13 @@
               "title": "Fail on Non-zero State Exit Code",
               "type": "boolean",
               "default": false
+            },
+            "command_timeout": {
+              "title": "Command Timeout (ms)",
+              "type": "integer",
+              "default": 10000,
+              "minimum": 100,
+              "description": "Maximum time an external command can run before it is terminated."
             }
           },
           "description": "Use Add Device to create entries.",
@@ -322,6 +345,7 @@
             "state_cache_ttl_ms",
             "reset_state_cache_on_set",
             "fail_on_state_exit_code",
+            "command_timeout"
             "unique_serial"
           ]
         },
