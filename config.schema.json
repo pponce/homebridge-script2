@@ -345,7 +345,7 @@
             "state_cache_ttl_ms",
             "reset_state_cache_on_set",
             "fail_on_state_exit_code",
-            "command_timeout"
+            "command_timeout",
             "unique_serial"
           ]
         },
