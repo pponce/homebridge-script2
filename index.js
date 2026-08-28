@@ -219,6 +219,12 @@ Script2DeviceLogic.prototype.formatCommandDiagnostics = function (
   const trimmedStdout = (stdout ?? "").trim();
   const trimmedStderr = (stderr ?? "").trim();
 
+  // child_process.exec() sets killed=true when the process was terminated
+  // because the configured timeout was reached.
+  if (error?.killed === true) {
+    return `${this.name} ${action} command timed out after ${this.commandTimeout}ms`;
+  }
+
   return `${this.name} ${action} command diagnostics: exitCode=${exitCode}${signal}, errorMessage="${errorMessage}", stdout="${trimmedStdout}", stderr="${trimmedStderr}", command="${command}"`;
 };
 

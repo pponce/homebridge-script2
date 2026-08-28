@@ -398,10 +398,17 @@ function updateValidationPanel() {
 
   panel.style.display = 'block';
 
-  panel.innerHTML =
-    `Validation errors (${validationErrors.length})<ul>` +
-    `${validationErrors.map((e) => `<li>${e}</li>`).join('')}` +
-    '</ul>';
+  panel.textContent = `Validation errors (${validationErrors.length})`;
+
+  const ul = document.createElement('ul');
+
+  validationErrors.forEach((error) => {
+    const li = document.createElement('li');
+    li.textContent = error;
+    ul.appendChild(li);
+  });
+
+  panel.appendChild(ul);
 }
 
 async function save() {
