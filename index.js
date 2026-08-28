@@ -155,7 +155,7 @@ script2Accessory.prototype.getServices = function () {
   return this.logic.buildServices();
 };
 
-function Script2DeviceLogic(log, config) {
+function Script2DeviceLogic(log, config, commandExecutor = exec) {
   this.log = log;
   this.service = "Switch";
 
@@ -185,6 +185,9 @@ function Script2DeviceLogic(log, config) {
   this.lastStateReadAt = 0;
   this.inFlightStateCallbacks = null;
   this.switchService = null;
+  this.commandExecutor = commandExecutor;
+  this.inFlightSet = null;
+  this.pendingSetQueue = [];
 
   if (!Number.isFinite(this.commandTimeout) || this.commandTimeout <= 0) {
     this.log.warn(
@@ -273,34 +276,93 @@ Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switch
 };
 
 Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
+  const requestedState = !!powerOn;
+
+  if (this.inFlightSet) {
+    if (
+      this.inFlightSet.requestedState === requestedState &&
+      this.pendingSetQueue.length === 0
+    ) {
+      this.log.debug(
+        `Coalescing duplicate ${requestedState ? "ON" : "OFF"} request for ${this.name}; command is already in flight.`
+      );
+      this.inFlightSet.callbacks.push(callback);
+      return;
+    }
+
+    const lastPendingSet = this.pendingSetQueue[this.pendingSetQueue.length - 1];
+    if (lastPendingSet?.requestedState === requestedState) {
+      this.log.debug(
+        `Coalescing queued ${requestedState ? "ON" : "OFF"} request for ${this.name}.`
+      );
+      lastPendingSet.callbacks.push(callback);
+      return;
+    }
+
+    this.log.debug(
+      `Queueing ${requestedState ? "ON" : "OFF"} request for ${this.name}; another set command is in flight.`
+    );
+    this.pendingSetQueue.push({ requestedState, callbacks: [callback] });
+    return;
+  }
+
+  this.startSetCommand({ requestedState, callbacks: [callback] });
+};
+
+Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
+  const powerOn = setRequest.requestedState;
+  this.inFlightSet = setRequest;
   this.log.debug(`Setting ${this.name} to ${powerOn ? "ON" : "OFF"}...`);
 
   const command = powerOn ? this.onCommand : this.offCommand;
   const action = powerOn ? "on" : "off";
   this.log.debug(`Executing command: ${command}`);
-  exec(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
+  let commandSettled = false;
+  this.commandExecutor(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
+    if (commandSettled) {
+      this.log.warn(`Ignoring duplicate ${action} command completion for ${this.name}.`);
+      return;
+    }
+    commandSettled = true;
+
+    let callbackError = null;
+
     if (error || stderr) {
       const diagnostics = this.formatCommandDiagnostics(action, command, error, stdout, stderr);
       const errMessage = `Set State returned an error. ${diagnostics}`;
       this.log.error(`Set State returned an error: ${errMessage}`);
-      callback(new Error(errMessage), null);
-      return;
+      callbackError = new Error(errMessage);
+    } else {
+      const commandOutput = stdout.trim().toLowerCase();
+      this.log.debug(`Set State Command returned ${commandOutput}`);
+
+      this.currentState = powerOn;
+      if (this.resetStateCacheOnSet && this.stateCommand && !this.fileState) {
+        this.lastStateRead = powerOn;
+        this.lastStateReadAt = Date.now();
+        this.log.debug(
+          `Reset state cache for ${this.name} from manual set action to ${powerOn ? "ON" : "OFF"}.`
+        );
+      }
+      this.log.info(`Set ${this.name} to ${powerOn ? "ON" : "OFF"}`);
     }
 
-    const commandOutput = stdout.trim().toLowerCase();
-    this.log.debug(`Set State Command returned ${commandOutput}`);
-
-    this.currentState = powerOn;
-    if (this.resetStateCacheOnSet && this.stateCommand && !this.fileState) {
-      this.lastStateRead = powerOn;
-      this.lastStateReadAt = Date.now();
-      this.log.debug(
-        `Reset state cache for ${this.name} from manual set action to ${powerOn ? "ON" : "OFF"}.`
-      );
+    const completedSet = this.inFlightSet;
+    this.inFlightSet = null;
+    const nextSet = this.pendingSetQueue.shift();
+    if (nextSet) {
+      this.startSetCommand(nextSet);
     }
-    this.log.info(`Set ${this.name} to ${powerOn ? "ON" : "OFF"}`);
 
-    callback(null, powerOn);
+    completedSet.callbacks.forEach((pendingCallback) => {
+      try {
+        pendingCallback(callbackError, callbackError ? null : powerOn);
+      } catch (callbackException) {
+        this.log.error(
+          `Set callback for ${this.name} threw an error: ${callbackException.message}`
+        );
+      }
+    });
   });
 };
 
@@ -360,7 +422,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
     this.inFlightStateCallbacks = [callback];
     const command = this.stateCommand;
     this.log.debug(`Executing command: ${command}`);
-    exec(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
+    this.commandExecutor(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
       const pendingCallbacks = this.inFlightStateCallbacks || [];
       this.inFlightStateCallbacks = null;
       const cleanCommandOutput = stdout.trim().toLowerCase();
@@ -429,7 +491,7 @@ Script2DeviceLogic.prototype.setStatelessTrigger = function (powerOn, callback) 
 
   this.log.debug(`Triggering ${this.name} stateless action...`);
   this.log.debug(`Executing command: ${command}`);
-  exec(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
+  this.commandExecutor(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
     if (error || stderr) {
       const diagnostics = this.formatCommandDiagnostics("trigger", command, error, stdout, stderr);
       const errMessage = `Stateless trigger returned an error. ${diagnostics}`;
@@ -553,3 +615,5 @@ Script2DeviceLogic.prototype.buildServices = function () {
   this.bindServices(platformAccessory);
   return [informationService, switchService];
 };
+
+module.exports.Script2DeviceLogic = Script2DeviceLogic;
