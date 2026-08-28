@@ -33,7 +33,7 @@ const FIELD_CONFIG = {
       { field: 'state', label: 'State Command', required: false, help: 'Command that prints current state value (for example true/false). Required if State File Path is not set.' },
       { field: 'fileState', label: 'State File Path', required: false, help: 'If set, ON/OFF state is determined by file existence. Required if State Command is not set.' },
       { field: 'command_timeout', label: 'Command Timeout (ms)', required: false, type: 'number', min: 100, help: 'Maximum time an external command can run before it is terminated. Defaults to 10000 ms.' },
-      { field: 'homekit_set_ack_timeout_ms', label: 'HomeKit Set Acknowledgement (ms)', required: false, type: 'number', min: 0, help: 'Acknowledge a still-running ON/OFF request after this delay to avoid controller timeouts. Defaults to 5000 ms; set 0 to wait for command completion.' },
+      { field: 'homekit_set_ack_timeout_ms', label: 'HomeKit Set Acknowledgement (ms)', required: false, type: 'number', min: 0, help: 'Opt in to acknowledging a still-running ON/OFF request after this delay. Defaults to 0 (wait for command completion) and requires State Command or State File Path.' },
     ],
   },
 
@@ -59,7 +59,7 @@ const FIELD_CONFIG = {
       { field: 'state', label: 'State Command', required: false, help: 'Required if State File Path is not set.' },
       { field: 'fileState', label: 'State File Path', required: false, help: 'Required if State Command is not set.' },
       { field: 'command_timeout', label: 'Command Timeout (ms)', required: false, type: 'number', min: 100, help: 'Maximum time an external command can run before it is terminated. Defaults to 10000 ms.' },
-      { field: 'homekit_set_ack_timeout_ms', label: 'HomeKit Set Acknowledgement (ms)', required: false, type: 'number', min: 0, help: 'Acknowledge a still-running ON/OFF request after this delay to avoid controller timeouts. Defaults to 5000 ms; set 0 to wait for command completion.' },
+      { field: 'homekit_set_ack_timeout_ms', label: 'HomeKit Set Acknowledgement (ms)', required: false, type: 'number', min: 0, help: 'Opt in to acknowledging a still-running ON/OFF request after this delay. Defaults to 0 (wait for command completion) and requires State Command or State File Path.' },
     ],
   },
 };

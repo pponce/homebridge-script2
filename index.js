@@ -167,7 +167,7 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
   this.triggerCommand = config["trigger"] || config["on"] || false;
   this.autoResetMs = Number(config["auto_reset_ms"] || 500);
   this.commandTimeout = Number(config["command_timeout"] ?? 10000);
-  this.homekitSetAckTimeoutMs = Number(config["homekit_set_ack_timeout_ms"] ?? 5000);
+  this.homekitSetAckTimeoutMs = Number(config["homekit_set_ack_timeout_ms"] ?? 0);
   this.statelessTriggerOn = config["stateless_trigger_on"] === "off" ? "off" : "on";
   this.stateCommand = config["state"] || false;
   this.onValue = config["on_value"] || "true";
@@ -207,9 +207,15 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
     this.homekitSetAckTimeoutMs < 0
   ) {
     this.log.warn(
-      `Invalid homekit_set_ack_timeout_ms '${this.homekitSetAckTimeoutMs}' for ${this.name}; using default 5000ms.`
+      `Invalid homekit_set_ack_timeout_ms '${this.homekitSetAckTimeoutMs}' for ${this.name}; using default 0ms.`
     );
-    this.homekitSetAckTimeoutMs = 5000;
+    this.homekitSetAckTimeoutMs = 0;
+  }
+  if (this.homekitSetAckTimeoutMs > 0 && !this.stateCommand && !this.fileState) {
+    this.log.warn(
+      `${this.name}: homekit_set_ack_timeout_ms requires 'state' or 'fileState' for late-failure reconciliation; disabling early acknowledgement.`
+    );
+    this.homekitSetAckTimeoutMs = 0;
   }
   if (this.fileState && this.stateCommand) {
     this.log.warn(
@@ -259,6 +265,17 @@ Script2DeviceLogic.prototype.shutdown = function () {
     });
     this.watcher = null;
   }
+
+  const callbackEntries = [
+    ...(this.inFlightSet?.callbacks || []),
+    ...this.pendingSetQueue.flatMap((setRequest) => setRequest.callbacks),
+  ];
+  callbackEntries.forEach((entry) => {
+    if (entry.timer) {
+      clearTimeout(entry.timer);
+      entry.timer = null;
+    }
+  });
 };
 
 Script2DeviceLogic.prototype.logGetStateResult = function (poweredOn, requestPath, source, nonZeroExit) {
@@ -339,6 +356,9 @@ Script2DeviceLogic.prototype.createSetCallbackEntry = function (requestedState, 
 
   if (this.homekitSetAckTimeoutMs > 0) {
     entry.timer = setTimeout(() => {
+      if (entry.settled) {
+        return;
+      }
       this.earlySetAcknowledged = true;
       this.log.debug(
         `Acknowledging ${requestedState ? "ON" : "OFF"} request for ${this.name} while its command remains pending.`
@@ -492,7 +512,15 @@ Script2DeviceLogic.prototype.finishSetStateReconciliation = function (setError, 
     return;
   }
 
+  const reconciliationGeneration = this.stateGeneration;
   this.getState((error, poweredOn, source, nonFatalError) => {
+    if (reconciliationGeneration !== this.stateGeneration) {
+      this.log.debug(
+        `Discarding stale post-set reconciliation for ${this.name}; generation changed from ${reconciliationGeneration} to ${this.stateGeneration}.`
+      );
+      return;
+    }
+
     if (
       !error &&
       (shouldUpdateCharacteristic || mustReconcileAcknowledgedFailure) &&

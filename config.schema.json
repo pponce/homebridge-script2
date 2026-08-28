@@ -76,7 +76,7 @@
             "polling_interval": {
               "title": "Polling Interval (ms)",
               "type": "integer",
-              "default": 5000,
+              "default": 0,
               "minimum": 250
             },
             "polling_on_start": {
@@ -111,7 +111,7 @@
             "homekit_set_ack_timeout_ms": {
               "title": "HomeKit Set Acknowledgement (ms)",
               "type": "integer",
-              "default": 5000,
+              "default": 0,
               "minimum": 0,
               "description": "Acknowledge an ON/OFF request after this delay while its command continues. Set to 0 to wait for command completion."
             }
