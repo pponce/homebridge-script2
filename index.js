@@ -183,7 +183,10 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
   this.pollTimer = null;
   this.lastStateRead = null;
   this.lastStateReadAt = 0;
-  this.inFlightStateCallbacks = null;
+  this.inFlightStateRequest = null;
+  this.deferredStateRequests = [];
+  this.reconcileAfterSet = false;
+  this.stateGeneration = 0;
   this.switchService = null;
   this.commandExecutor = commandExecutor;
   this.inFlightSet = null;
@@ -256,6 +259,14 @@ Script2DeviceLogic.prototype.logGetStateResult = function (poweredOn, requestPat
 };
 
 Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
+  if (this.inFlightSet) {
+    this.reconcileAfterSet = true;
+    this.log.debug(
+      `Deferring polling update for ${this.name}; set to ${this.inFlightSet.requestedState ? "ON" : "OFF"} is in flight.`
+    );
+    return;
+  }
+
   this.getState((err, poweredOn, source, nonFatalError) => {
     if (err) {
       this.updateReachabilityFault(true);
@@ -311,6 +322,19 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
 
 Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
   const powerOn = setRequest.requestedState;
+  this.stateGeneration += 1;
+
+  if (this.inFlightStateRequest) {
+    this.log.debug(
+      `Deferring state read completion for ${this.name}; a newer set is starting.`
+    );
+    this.deferredStateRequests.push(...this.inFlightStateRequest.requests);
+    if (this.inFlightStateRequest.requests.some((request) => request.requestPath === "polling")) {
+      this.reconcileAfterSet = true;
+    }
+    this.inFlightStateRequest = null;
+  }
+
   this.inFlightSet = setRequest;
   this.log.debug(`Setting ${this.name} to ${powerOn ? "ON" : "OFF"}...`);
 
@@ -352,6 +376,8 @@ Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
     const nextSet = this.pendingSetQueue.shift();
     if (nextSet) {
       this.startSetCommand(nextSet);
+    } else {
+      this.finishSetStateReconciliation(callbackError, powerOn);
     }
 
     completedSet.callbacks.forEach((pendingCallback) => {
@@ -366,8 +392,75 @@ Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
   });
 };
 
-Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homekit-get") {
+Script2DeviceLogic.prototype.deferStateRequest = function (callback, requestPath) {
+  this.log.debug(
+    `Deferring GetState ${this.name} (${requestPath}); ` +
+    `${this.inFlightSet.requestedState ? "ON" : "OFF"} set is in flight.`
+  );
+  this.deferredStateRequests.push({ callback, requestPath });
+};
+
+Script2DeviceLogic.prototype.resolveDeferredStateRequests = function (
+  error,
+  poweredOn,
+  source,
+  nonFatalError = null
+) {
+  const deferredRequests = this.deferredStateRequests;
+  this.deferredStateRequests = [];
+
+  deferredRequests.forEach(({ callback, requestPath }) => {
+    try {
+      if (!error) {
+        this.logGetStateResult(poweredOn, requestPath, source, !!nonFatalError);
+      }
+      callback(error, error ? null : poweredOn, source, nonFatalError);
+    } catch (callbackException) {
+      this.log.error(
+        `Deferred state callback for ${this.name} threw an error: ${callbackException.message}`
+      );
+    }
+  });
+};
+
+Script2DeviceLogic.prototype.finishSetStateReconciliation = function (setError, requestedState) {
+  if (!setError) {
+    this.resolveDeferredStateRequests(null, requestedState, "completed-set");
+
+    const shouldReconcile = this.reconcileAfterSet;
+    this.reconcileAfterSet = false;
+    if (shouldReconcile && this.switchService) {
+      this.pollStateAndUpdateCharacteristic(this.switchService);
+    }
+    return;
+  }
+
+  const shouldUpdateCharacteristic = this.reconcileAfterSet;
+  this.reconcileAfterSet = false;
+  if (this.deferredStateRequests.length === 0 && !shouldUpdateCharacteristic) {
+    return;
+  }
+
+  this.getState((error, poweredOn, source, nonFatalError) => {
+    if (!error && shouldUpdateCharacteristic && this.switchService) {
+      this.currentState = poweredOn;
+      this.switchService.updateCharacteristic(Characteristic.On, poweredOn);
+    }
+    this.resolveDeferredStateRequests(error, poweredOn, source, nonFatalError);
+  }, "post-set-reconciliation", true);
+};
+
+Script2DeviceLogic.prototype.getState = function (
+  callback,
+  requestPath = "homekit-get",
+  bypassCache = false
+) {
   this.log.debug(`Getting ${this.name} state...`);
+
+  if (this.inFlightSet) {
+    this.deferStateRequest(callback, requestPath);
+    return;
+  }
 
   if (this.fileState) {
     try {
@@ -393,6 +486,7 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
 
     const now = Date.now();
     if (
+      !bypassCache &&
       this.stateCacheTtlMs > 0 &&
       this.lastStateRead !== null &&
       now - this.lastStateReadAt <= this.stateCacheTtlMs
@@ -403,28 +497,45 @@ Script2DeviceLogic.prototype.getState = function (callback, requestPath = "homek
       return;
     }
 
-    if (this.inFlightStateCallbacks) {
+    if (this.inFlightStateRequest) {
       this.log.debug(`State get for ${this.name} served from in-flight request.`);
-      this.inFlightStateCallbacks.push((err, poweredOn, source) => {
-        if (err) {
-          this.updateReachabilityFault(true);
-          callback(err, null, source);
-          return;
-        }
+      this.inFlightStateRequest.requests.push({
+        requestPath,
+        callback: (err, poweredOn, source) => {
+          if (err) {
+            this.updateReachabilityFault(true);
+            callback(err, null, source);
+            return;
+          }
 
-        this.logGetStateResult(poweredOn, requestPath, "in-flight-coalesced", false);
-        this.updateReachabilityFault(false);
-        callback(null, poweredOn, "in-flight-coalesced");
+          this.logGetStateResult(poweredOn, requestPath, "in-flight-coalesced", false);
+          this.updateReachabilityFault(false);
+          callback(null, poweredOn, "in-flight-coalesced");
+        },
       });
       return;
     }
 
-    this.inFlightStateCallbacks = [callback];
+    const stateRequest = {
+      generation: this.stateGeneration,
+      requests: [{ callback, requestPath }],
+    };
+    this.inFlightStateRequest = stateRequest;
     const command = this.stateCommand;
     this.log.debug(`Executing command: ${command}`);
     this.commandExecutor(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
-      const pendingCallbacks = this.inFlightStateCallbacks || [];
-      this.inFlightStateCallbacks = null;
+      if (this.inFlightStateRequest === stateRequest) {
+        this.inFlightStateRequest = null;
+      }
+
+      if (stateRequest.generation !== this.stateGeneration) {
+        this.log.debug(
+          `Discarding stale state result for ${this.name}; set generation changed from ${stateRequest.generation} to ${this.stateGeneration}.`
+        );
+        return;
+      }
+
+      const pendingCallbacks = stateRequest.requests.map((request) => request.callback);
       const cleanCommandOutput = stdout.trim().toLowerCase();
       this.log.debug(`Get State Command returned ${cleanCommandOutput}`);
 
