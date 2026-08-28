@@ -107,6 +107,13 @@
               "default": 10000,
               "minimum": 100,
               "description": "Maximum time an external command can run before it is terminated."
+            },
+            "homekit_set_ack_timeout_ms": {
+              "title": "HomeKit Set Acknowledgement (ms)",
+              "type": "integer",
+              "default": 5000,
+              "minimum": 0,
+              "description": "Acknowledge an ON/OFF request after this delay while its command continues. Set to 0 to wait for command completion."
             }
           },
           "description": "Use Add Device to create entries.",
@@ -143,6 +150,7 @@
             "reset_state_cache_on_set",
             "fail_on_state_exit_code",
             "command_timeout",
+            "homekit_set_ack_timeout_ms",
             "unique_serial"
           ]
         },
@@ -310,6 +318,13 @@
               "default": 10000,
               "minimum": 100,
               "description": "Maximum time an external command can run before it is terminated."
+            },
+            "homekit_set_ack_timeout_ms": {
+              "title": "HomeKit Set Acknowledgement (ms)",
+              "type": "integer",
+              "default": 5000,
+              "minimum": 0,
+              "description": "Acknowledge an ON/OFF request after this delay while its command continues. Set to 0 to wait for command completion."
             }
           },
           "description": "Use Add Device to create entries.",
@@ -346,6 +361,7 @@
             "reset_state_cache_on_set",
             "fail_on_state_exit_code",
             "command_timeout",
+            "homekit_set_ack_timeout_ms",
             "unique_serial"
           ]
         },

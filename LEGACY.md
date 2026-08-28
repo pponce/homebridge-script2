@@ -20,6 +20,8 @@ Name | Value | Required | Notes
 `state_cache_ttl_ms` | integer ms | no | Burst-read cache TTL
 `reset_state_cache_on_set` | `true/false` | no | Reset cache after manual set
 `fail_on_state_exit_code` | `true/false` | no | Treat non-zero state exit as read failure
+`command_timeout` | integer ms | no (default `10000`) | Maximum command runtime
+`homekit_set_ack_timeout_ms` | integer ms | no (default `5000`) | Acknowledge a pending set before command completion; `0` waits synchronously
 `unique_serial` | _(custom)_ | no | Recommended unique serial
 
 ### Legacy platform example

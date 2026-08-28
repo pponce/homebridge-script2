@@ -12,6 +12,7 @@
   const NUMERIC_FIELDS = new Set([
     'auto_reset_ms',
     'command_timeout',
+    'homekit_set_ack_timeout_ms',
     'polling_interval',
     'state_cache_ttl_ms',
   ]);

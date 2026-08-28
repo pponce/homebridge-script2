@@ -47,6 +47,8 @@ Name | Value | Required | Notes
 `state_cache_ttl_ms` | integer ms | no (default `1000`) | Cache TTL for burst reads
 `reset_state_cache_on_set` | `true/false` | no (default `false`) | Resets/seeds state cache after successful manual set
 `fail_on_state_exit_code` | `true/false` | no (default `false`) | Treat non-zero `state` exit code as read error
+`command_timeout` | integer ms | no (default `10000`) | Maximum runtime for ON, OFF, and state commands
+`homekit_set_ack_timeout_ms` | integer ms | no (default `5000`) | Acknowledge a still-running ON/OFF request after this delay; use `0` to wait for command completion
 `unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
 
 ### `stateless_switches` item parameters
@@ -69,6 +71,7 @@ Name | Value | Required | Notes
 - Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications to dynamically update homekit status.
 - When `state_cache_ttl_ms` is greater than `0`, `state` reads are cached briefly to prevent duplicate script executions from burst `get` requests.
 - By default, manual HomeKit ON/OFF actions do **not** reset or extend `state_cache_ttl_ms`. Set `reset_state_cache_on_set` to `true` if you want successful manual set actions to reset the TTL timer and seed the cache with the newly set state.
+- Long-running ON/OFF commands are acknowledged to HomeKit after `homekit_set_ack_timeout_ms` (default `5000`) even if the external command is still running. Script2 continues tracking the command, defers state reads, and reconciles actual state if the command later fails. Set this option to `0` to preserve synchronous callback behavior and wait for command completion.
 - If multiple `get` requests arrive while a state command is already running, they are coalesced and share the same in-flight command result.
 - Each `getState` request writes a single result log entry in the format `GetState <name>: ON/OFF (path: <homekit-get|polling>, source: <state-script|ttl-cache|in-flight-coalesced|file-state>)`. Where Path is telling you if this was the result of a polling request or a homekit initiated get request (out of the plugin's control). And source is where the value was sourced from, state-script execution result, ttl cache, in-flight coalesced, or from file-state.  
 - The TTL cache is per-accessory instance (per configured outlet/switch), not global across all accessories.
@@ -87,7 +90,9 @@ Name | Value | Required | Notes
         "on": "/opt/scripts/on.sh 1",
         "off": "/opt/scripts/off.sh 1",
         "state": "/opt/scripts/state.sh 1",
-        "on_value": "true"
+        "on_value": "true",
+        "command_timeout": 120000,
+        "homekit_set_ack_timeout_ms": 5000
       },
       {
         "name": "Outlet 2",
