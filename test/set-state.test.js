@@ -143,3 +143,100 @@ test('binding services repeatedly leaves exactly one set handler', () => {
   assert.equal(characteristic.listenerCount('set'), 1);
   assert.equal(characteristic.listenerCount('get'), 1);
 });
+
+test('a HomeKit GET during a successful set is deferred and receives the set result', () => {
+  const { commands, logic } = createHarness();
+  const getResults = [];
+
+  logic.setState(true, () => {});
+  logic.getState((error, value, source) => getResults.push({ error, value, source }));
+
+  assert.equal(commands.length, 1);
+  assert.equal(logic.deferredStateRequests.length, 1);
+
+  commands[0].callback(null, '', '');
+
+  assert.deepEqual(getResults, [
+    { error: null, value: true, source: 'completed-set' },
+  ]);
+  assert.equal(logic.deferredStateRequests.length, 0);
+});
+
+test('a failed set reconciles deferred GETs with an authoritative state read', () => {
+  const { commands, logic } = createHarness();
+  const getResults = [];
+
+  logic.setState(true, () => {});
+  logic.getState((error, value, source) => getResults.push({ error, value, source }));
+  commands[0].callback(new Error('set failed'), '', '');
+
+  assert.equal(commands.length, 2);
+  assert.equal(commands[1].command, 'get-state');
+  commands[1].callback(null, 'false\n', '');
+
+  assert.deepEqual(getResults, [
+    { error: null, value: false, source: 'state-script' },
+  ]);
+});
+
+test('a state read started before a set cannot publish its stale result', () => {
+  const { commands, logic } = createHarness();
+  const getResults = [];
+
+  logic.getState((error, value, source) => getResults.push({ error, value, source }));
+  logic.setState(true, () => {});
+
+  assert.equal(commands.length, 2);
+  assert.equal(commands[0].command, 'get-state');
+  assert.equal(commands[1].command, 'turn-on');
+
+  commands[0].callback(null, 'false\n', '');
+  assert.equal(getResults.length, 0);
+  assert.equal(logic.lastStateRead, null);
+
+  commands[1].callback(null, '', '');
+  assert.deepEqual(getResults, [
+    { error: null, value: true, source: 'completed-set' },
+  ]);
+});
+
+test('polling during a set is deferred and reconciled after completion', () => {
+  const { commands, logic } = createHarness();
+  const updates = [];
+  logic.switchService = {
+    updateCharacteristic(characteristicType, value) {
+      updates.push({ characteristicType, value });
+    },
+  };
+
+  logic.setState(true, () => {});
+  logic.pollStateAndUpdateCharacteristic(logic.switchService);
+  assert.equal(commands.length, 1);
+  assert.equal(logic.reconcileAfterSet, true);
+
+  commands[0].callback(null, '', '');
+  assert.equal(commands.length, 2);
+  assert.equal(commands[1].command, 'get-state');
+  commands[1].callback(null, 'true\n', '');
+
+  assert.deepEqual(updates, []);
+  assert.equal(logic.currentState, true);
+});
+
+test('deferred GETs remain pending until queued opposite sets finish', () => {
+  const { commands, logic } = createHarness();
+  const getResults = [];
+
+  logic.setState(true, () => {});
+  logic.getState((error, value, source) => getResults.push({ error, value, source }));
+  logic.setState(false, () => {});
+
+  commands[0].callback(null, '', '');
+  assert.equal(commands.length, 2);
+  assert.equal(getResults.length, 0);
+
+  commands[1].callback(null, '', '');
+  assert.deepEqual(getResults, [
+    { error: null, value: false, source: 'completed-set' },
+  ]);
+});

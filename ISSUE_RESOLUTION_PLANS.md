@@ -252,3 +252,17 @@ Repeated HomeKit set events can arrive before an ON/OFF command completes. Start
 - No two ON/OFF commands overlap for one accessory.
 - Callback or executor error handling cannot recursively start a duplicate command.
 - Each request callback is invoked exactly once.
+
+### Presentation-state reconciliation
+
+Command serialization alone does not prevent the Home tile from temporarily displaying an old durable state. GET and polling reads must participate in the set lifecycle as follows:
+
+1. Defer HomeKit GET callbacks received while any set command is active.
+2. Suppress polling reads while a set is active and request one post-set reconciliation.
+3. Increment a per-accessory state generation whenever a set begins.
+4. Detach callbacks belonging to a state read that began before the new generation, discard its eventual result, and never allow it to update the cache.
+5. If the final serialized set succeeds, resolve deferred GETs with its completed state and then perform any requested post-set poll.
+6. If the final set fails, bypass the TTL cache for one authoritative state read and resolve deferred GETs with the actual result.
+7. Keep deferred GETs pending across queued opposite-state commands so they observe the final serialized outcome rather than an intermediate state.
+
+Additional regression coverage must verify GET deferral after success, authoritative reconciliation after failure, stale pre-set read rejection, and post-set polling reconciliation.
