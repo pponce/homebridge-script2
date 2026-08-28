@@ -37,7 +37,9 @@ Name | Value | Required | Notes
         "on": "/opt/scripts/on.sh 1",
         "off": "/opt/scripts/off.sh 1",
         "state": "/opt/scripts/state.sh 1",
-        "on_value": "true"
+        "on_value": "true",
+        "command_timeout": 120000,
+        "homekit_set_ack_timeout_ms": 5000
       }
     ]
   }
@@ -57,6 +59,14 @@ Name | Value | Required | Notes
 `fileState` | _(custom)_ | fileState or state | File-based state source
 `state` | _(custom)_ | fileState or state | Script-based state source
 `on_value` | _(custom)_ | no (default `"true"`) | Match token for ON state
+`polling` | `true/false` | no | Poll `state` command periodically
+`polling_interval` | integer ms | no | Poll interval
+`polling_on_start` | `true/false` | no | Immediate startup poll
+`state_cache_ttl_ms` | integer ms | no | Burst-read cache TTL
+`reset_state_cache_on_set` | `true/false` | no | Reset cache after manual set
+`fail_on_state_exit_code` | `true/false` | no | Treat non-zero state exit as read failure
+`command_timeout` | integer ms | no (default `10000`) | Maximum command runtime
+`homekit_set_ack_timeout_ms` | integer ms | no (default `0`) | Opt in to acknowledging a pending set before completion; requires a state source
 `unique_serial` | _(custom)_ | no | Recommended unique serial
 
 ### Legacy accessory example
@@ -69,7 +79,9 @@ Name | Value | Required | Notes
     "on": "/opt/scripts/on.sh 1",
     "off": "/opt/scripts/off.sh 1",
     "state": "/opt/scripts/state.sh 1",
-    "on_value": "true"
+    "on_value": "true",
+    "command_timeout": 120000,
+    "homekit_set_ack_timeout_ms": 5000
   }
 ]
 ```
