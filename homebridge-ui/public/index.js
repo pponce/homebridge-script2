@@ -1,6 +1,11 @@
-/* global homebridge */
+/* global homebridge, Script2ConfigUtils */
 
 let pluginConfig = {};
+let pluginConfigBlocks = [];
+let pluginConfigIndex = -1;
+let syncTimer = null;
+let syncInProgress = false;
+let syncError = null;
 
 const state = {
   on_off_switches: [],
@@ -27,7 +32,8 @@ const FIELD_CONFIG = {
       { field: 'off', label: 'OFF Command', required: true, help: 'Shell command/script executed when turning the switch OFF.' },
       { field: 'state', label: 'State Command', required: false, help: 'Command that prints current state value (for example true/false). Required if State File Path is not set.' },
       { field: 'fileState', label: 'State File Path', required: false, help: 'If set, ON/OFF state is determined by file existence. Required if State Command is not set.' },
-      { field: 'command_timeout', label: 'Command Timeout (ms)', required: false, help: 'Maximum time an external command can run before it is terminated. Defaults to 10000 ms.' },
+      { field: 'command_timeout', label: 'Command Timeout (ms)', required: false, type: 'number', min: 100, help: 'Maximum time an external command can run before it is terminated. Defaults to 10000 ms.' },
+      { field: 'homekit_set_ack_timeout_ms', label: 'HomeKit Set Acknowledgement (ms)', required: false, type: 'number', min: 0, help: 'Opt in to acknowledging a still-running ON/OFF request after this delay. Defaults to 0 (wait for command completion) and requires State Command or State File Path.' },
     ],
   },
 
@@ -37,8 +43,8 @@ const FIELD_CONFIG = {
     fields: [
       { field: 'name', label: 'Accessory Name', required: true, help: 'Name shown in Home app for this trigger switch.' },
       { field: 'trigger', label: 'Trigger Command', required: true, help: 'Command/script executed when the stateless trigger is activated.' },
-      { field: 'auto_reset_ms', label: 'Auto Reset Delay (ms)', required: false, help: 'Delay in milliseconds before the switch tile automatically resets.' },
-      { field: 'command_timeout', label: 'Command Timeout (ms)', required: false, help: 'Maximum time an external command can run before it is terminated. Defaults to 10000 ms.' },
+      { field: 'auto_reset_ms', label: 'Auto Reset Delay (ms)', required: false, type: 'number', min: 0, help: 'Delay in milliseconds before the switch tile automatically resets.' },
+      { field: 'command_timeout', label: 'Command Timeout (ms)', required: false, type: 'number', min: 100, help: 'Maximum time an external command can run before it is terminated. Defaults to 10000 ms.' },
       { field: 'stateless_trigger_on', label: 'Stateless Trigger On', required: false, help: 'Choose whether trigger runs on ON or OFF action.' },
     ],
   },
@@ -52,7 +58,8 @@ const FIELD_CONFIG = {
       { field: 'off', label: 'OFF Command', required: true, help: 'Command executed when turning this legacy switch OFF.' },
       { field: 'state', label: 'State Command', required: false, help: 'Required if State File Path is not set.' },
       { field: 'fileState', label: 'State File Path', required: false, help: 'Required if State Command is not set.' },
-      { field: 'command_timeout', label: 'Command Timeout (ms)', required: false, help: 'Maximum time an external command can run before it is terminated. Defaults to 10000 ms.' },
+      { field: 'command_timeout', label: 'Command Timeout (ms)', required: false, type: 'number', min: 100, help: 'Maximum time an external command can run before it is terminated. Defaults to 10000 ms.' },
+      { field: 'homekit_set_ack_timeout_ms', label: 'HomeKit Set Acknowledgement (ms)', required: false, type: 'number', min: 0, help: 'Opt in to acknowledging a still-running ON/OFF request after this delay. Defaults to 0 (wait for command completion) and requires State Command or State File Path.' },
     ],
   },
 };
@@ -73,12 +80,14 @@ function el(tag, props = {}, children = []) {
   return node;
 }
 
-function textInput(value, onChange) {
+function textInput(value, onChange, type = 'text', min) {
   return el('input', {
-    value: value || '',
+    value: value ?? '',
+    type,
+    ...(min === undefined ? {} : { min }),
     oninput: (e) => {
       onChange(e.target.value);
-      updateValidationPanel();
+      configChanged();
     },
   });
 }
@@ -87,7 +96,7 @@ function selectInput(value, options, onChange) {
   const node = el('select', {
     onchange: (e) => {
       onChange(e.target.value);
-      updateValidationPanel();
+      configChanged();
     },
   });
 
@@ -120,7 +129,7 @@ function renderDeviceRow(device, key, idx, fields) {
 
   const row = el('div', { class: 'device-body' });
 
-  fields.forEach(({ field, label, required, help }) => {
+  fields.forEach(({ field, label, required, help, type, min }) => {
     const labelNode = el('label', { text: label });
 
     if (required) {
@@ -137,15 +146,17 @@ function renderDeviceRow(device, key, idx, fields) {
           { value: 'off', label: 'Trigger on Off' },
         ],
         (v) => {
-          state[key][idx][field] = v;
+          Script2ConfigUtils.setDeviceField(state[key][idx], field, v);
         }
       ));
     } else {
       row.appendChild(textInput(
         device[field],
         (v) => {
-          state[key][idx][field] = v;
-        }
+          Script2ConfigUtils.setDeviceField(state[key][idx], field, v);
+        },
+        type,
+        min,
       ));
     }
 
@@ -164,6 +175,7 @@ function renderDeviceRow(device, key, idx, fields) {
       state[key].splice(idx, 1);
       openSections[key] = true;
       render();
+      configChanged();
     },
   }));
 
@@ -218,6 +230,7 @@ function renderSection(title, description, key, fields) {
       state[key].push({});
       openSections[key] = true;
       render();
+      configChanged();
     },
   }));
 
@@ -269,26 +282,29 @@ async function load() {
   const config = await homebridge.getPluginConfig();
 
   if (Array.isArray(config)) {
-    pluginConfig =
-      config.find(
-        (entry) => entry && entry.platform === 'Script2Platform'
-      ) ||
-      config[0] ||
-      {};
+    pluginConfigBlocks = JSON.parse(JSON.stringify(config));
+    pluginConfigIndex = pluginConfigBlocks.findIndex(
+      (entry) => entry && entry.platform === 'Script2Platform'
+    );
+    pluginConfig = pluginConfigIndex >= 0
+      ? pluginConfigBlocks[pluginConfigIndex]
+      : {};
   } else {
+    pluginConfigBlocks = [];
+    pluginConfigIndex = -1;
     pluginConfig = {};
   }
 
   state.on_off_switches = Array.isArray(pluginConfig.on_off_switches)
-    ? pluginConfig.on_off_switches
+    ? JSON.parse(JSON.stringify(pluginConfig.on_off_switches))
     : [];
 
   state.stateless_switches = Array.isArray(pluginConfig.stateless_switches)
-    ? pluginConfig.stateless_switches
+    ? JSON.parse(JSON.stringify(pluginConfig.stateless_switches))
     : [];
 
   state.devices = Array.isArray(pluginConfig.devices)
-    ? pluginConfig.devices
+    ? JSON.parse(JSON.stringify(pluginConfig.devices))
     : [];
 
   openSections.on_off_switches = false;
@@ -300,6 +316,16 @@ async function load() {
 
 function validateRequiredFields() {
   const errors = [];
+
+  const validateNumber = (device, field, label, minimum) => {
+    if (device[field] === undefined) {
+      return;
+    }
+
+    if (!Number.isInteger(device[field]) || device[field] < minimum) {
+      errors.push(`${label} must be an integer of at least ${minimum} ms.`);
+    }
+  };
 
   (state.on_off_switches || []).forEach((d, i) => {
     if (!d?.name) {
@@ -319,6 +345,9 @@ function validateRequiredFields() {
         `On/Off #${i + 1}: set State Command or State File Path.`
       );
     }
+
+    validateNumber(d, 'command_timeout', `On/Off #${i + 1}: Command Timeout`, 100);
+    validateNumber(d, 'homekit_set_ack_timeout_ms', `On/Off #${i + 1}: HomeKit Set Acknowledgement`, 0);
   });
 
   (state.stateless_switches || []).forEach((d, i) => {
@@ -329,6 +358,9 @@ function validateRequiredFields() {
     if (!d?.trigger) {
       errors.push(`Stateless #${i + 1}: Trigger Command is required.`);
     }
+
+    validateNumber(d, 'auto_reset_ms', `Stateless #${i + 1}: Auto Reset Delay`, 0);
+    validateNumber(d, 'command_timeout', `Stateless #${i + 1}: Command Timeout`, 100);
   });
 
   (state.devices || []).forEach((d, i) => {
@@ -349,11 +381,10 @@ function validateRequiredFields() {
         `Legacy #${i + 1}: set State Command or State File Path.`
       );
     }
-  });
 
-  if (!pluginConfig?.name || !String(pluginConfig.name).trim()) {
-    errors.push('Platform Name is required.');
-  }
+    validateNumber(d, 'command_timeout', `Legacy #${i + 1}: Command Timeout`, 100);
+    validateNumber(d, 'homekit_set_ack_timeout_ms', `Legacy #${i + 1}: HomeKit Set Acknowledgement`, 0);
+  });
 
   return errors;
 }
@@ -368,7 +399,7 @@ function updateValidationPanel() {
     return;
   }
 
-  if (validationErrors.length === 0) {
+  if (validationErrors.length === 0 && !syncError) {
     icon.className = 'status-icon ok';
     icon.textContent = '✓';
     icon.title = 'Configuration is valid';
@@ -378,12 +409,19 @@ function updateValidationPanel() {
     panel.style.display = 'none';
     panel.innerHTML = '';
 
+    if (!syncTimer && !syncInProgress) {
+      homebridge.enableSaveButton();
+    }
+
     return;
   }
 
+  homebridge.disableSaveButton();
+
   icon.className = 'status-icon error';
   icon.textContent = '⚠';
-  icon.title = `Validation errors (${validationErrors.length}) — click to view`;
+  const issueCount = validationErrors.length + (syncError ? 1 : 0);
+  icon.title = `Configuration errors (${issueCount}) — click to view`;
 
   icon.onclick = () => {
     showValidationDetails = !showValidationDetails;
@@ -398,7 +436,7 @@ function updateValidationPanel() {
 
   panel.style.display = 'block';
 
-  panel.textContent = `Validation errors (${validationErrors.length})`;
+  panel.textContent = `Configuration errors (${issueCount})`;
 
   const ul = document.createElement('ul');
 
@@ -408,34 +446,60 @@ function updateValidationPanel() {
     ul.appendChild(li);
   });
 
+  if (syncError) {
+    const li = document.createElement('li');
+    li.textContent = `Unable to synchronize configuration: ${syncError.message}`;
+    ul.appendChild(li);
+  }
+
   panel.appendChild(ul);
 }
 
-async function save() {
-  const errors = validateRequiredFields();
+function configChanged() {
+  syncError = null;
+  homebridge.disableSaveButton();
+  updateValidationPanel();
 
-  if (errors.length > 0) {
-    showValidationDetails = true;
-    updateValidationPanel();
+  if (validationErrors.length > 0) {
     return;
   }
 
-  const next = {
-    ...pluginConfig,
-    platform: 'Script2Platform',
-    name: pluginConfig.name || 'Script2',
-    on_off_switches: state.on_off_switches,
-    stateless_switches: state.stateless_switches,
-  };
-
-  if (state.devices.length > 0) {
-    next.devices = state.devices;
-  } else {
-    delete next.devices;
+  if (syncTimer) {
+    clearTimeout(syncTimer);
   }
 
-  await homebridge.updatePluginConfig([next]);
-  await homebridge.savePluginConfig();
+  syncTimer = setTimeout(synchronizeConfig, 250);
+}
+
+async function synchronizeConfig() {
+  syncTimer = null;
+  syncInProgress = true;
+  homebridge.disableSaveButton();
+
+  const nextBlocks = Script2ConfigUtils.buildPluginConfig(
+    pluginConfigBlocks,
+    pluginConfigIndex,
+    pluginConfig,
+    state,
+  );
+
+  try {
+    const updatedConfig = await homebridge.updatePluginConfig(nextBlocks);
+    pluginConfigBlocks = Array.isArray(updatedConfig)
+      ? JSON.parse(JSON.stringify(updatedConfig))
+      : nextBlocks;
+    pluginConfigIndex = pluginConfigBlocks.findIndex(
+      (entry) => entry && entry.platform === 'Script2Platform'
+    );
+    pluginConfig = pluginConfigBlocks[pluginConfigIndex];
+    syncError = null;
+  } catch (error) {
+    syncError = error instanceof Error ? error : new Error(String(error));
+    showValidationDetails = true;
+  } finally {
+    syncInProgress = false;
+    updateValidationPanel();
+  }
 }
 
 load();
