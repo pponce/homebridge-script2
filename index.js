@@ -37,6 +37,7 @@ function sanitizeDeviceConfig(deviceConfig) {
     delete sanitized["state_cache_ttl_ms"];
     delete sanitized["reset_state_cache_on_set"];
     delete sanitized["fail_on_state_exit_code"];
+    delete sanitized["homekit_set_ack_timeout_ms"];
   } else {
     delete sanitized["trigger"];
     delete sanitized["auto_reset_ms"];
@@ -166,6 +167,7 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
   this.triggerCommand = config["trigger"] || config["on"] || false;
   this.autoResetMs = Number(config["auto_reset_ms"] || 500);
   this.commandTimeout = Number(config["command_timeout"] ?? 10000);
+  this.homekitSetAckTimeoutMs = Number(config["homekit_set_ack_timeout_ms"] ?? 0);
   this.statelessTriggerOn = config["stateless_trigger_on"] === "off" ? "off" : "on";
   this.stateCommand = config["state"] || false;
   this.onValue = config["on_value"] || "true";
@@ -191,12 +193,29 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
   this.commandExecutor = commandExecutor;
   this.inFlightSet = null;
   this.pendingSetQueue = [];
+  this.earlySetAcknowledged = false;
 
   if (!Number.isFinite(this.commandTimeout) || this.commandTimeout <= 0) {
     this.log.warn(
       `Invalid command_timeout '${this.commandTimeout}' for ${this.name}; using default 10000ms.`
     );
   this.commandTimeout = 10000;
+  }
+  if (
+    !Number.isFinite(this.homekitSetAckTimeoutMs) ||
+    !Number.isInteger(this.homekitSetAckTimeoutMs) ||
+    this.homekitSetAckTimeoutMs < 0
+  ) {
+    this.log.warn(
+      `Invalid homekit_set_ack_timeout_ms '${this.homekitSetAckTimeoutMs}' for ${this.name}; using default 0ms.`
+    );
+    this.homekitSetAckTimeoutMs = 0;
+  }
+  if (this.homekitSetAckTimeoutMs > 0 && !this.stateCommand && !this.fileState) {
+    this.log.warn(
+      `${this.name}: homekit_set_ack_timeout_ms requires 'state' or 'fileState' for late-failure reconciliation; disabling early acknowledgement.`
+    );
+    this.homekitSetAckTimeoutMs = 0;
   }
   if (this.fileState && this.stateCommand) {
     this.log.warn(
@@ -246,6 +265,17 @@ Script2DeviceLogic.prototype.shutdown = function () {
     });
     this.watcher = null;
   }
+
+  const callbackEntries = [
+    ...(this.inFlightSet?.callbacks || []),
+    ...this.pendingSetQueue.flatMap((setRequest) => setRequest.callbacks),
+  ];
+  callbackEntries.forEach((entry) => {
+    if (entry.timer) {
+      clearTimeout(entry.timer);
+      entry.timer = null;
+    }
+  });
 };
 
 Script2DeviceLogic.prototype.logGetStateResult = function (poweredOn, requestPath, source, nonZeroExit) {
@@ -288,6 +318,7 @@ Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switch
 
 Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
   const requestedState = !!powerOn;
+  const callbackEntry = this.createSetCallbackEntry(requestedState, callback);
 
   if (this.inFlightSet) {
     if (
@@ -297,7 +328,7 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
       this.log.debug(
         `Coalescing duplicate ${requestedState ? "ON" : "OFF"} request for ${this.name}; command is already in flight.`
       );
-      this.inFlightSet.callbacks.push(callback);
+      this.inFlightSet.callbacks.push(callbackEntry);
       return;
     }
 
@@ -306,18 +337,57 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
       this.log.debug(
         `Coalescing queued ${requestedState ? "ON" : "OFF"} request for ${this.name}.`
       );
-      lastPendingSet.callbacks.push(callback);
+      lastPendingSet.callbacks.push(callbackEntry);
       return;
     }
 
     this.log.debug(
       `Queueing ${requestedState ? "ON" : "OFF"} request for ${this.name}; another set command is in flight.`
     );
-    this.pendingSetQueue.push({ requestedState, callbacks: [callback] });
+    this.pendingSetQueue.push({ requestedState, callbacks: [callbackEntry] });
     return;
   }
 
-  this.startSetCommand({ requestedState, callbacks: [callback] });
+  this.startSetCommand({ requestedState, callbacks: [callbackEntry] });
+};
+
+Script2DeviceLogic.prototype.createSetCallbackEntry = function (requestedState, callback) {
+  const entry = { callback, requestedState, settled: false, timer: null };
+
+  if (this.homekitSetAckTimeoutMs > 0) {
+    entry.timer = setTimeout(() => {
+      if (entry.settled) {
+        return;
+      }
+      this.earlySetAcknowledged = true;
+      this.log.debug(
+        `Acknowledging ${requestedState ? "ON" : "OFF"} request for ${this.name} while its command remains pending.`
+      );
+      this.settleSetCallback(entry, null, requestedState);
+    }, this.homekitSetAckTimeoutMs);
+  }
+
+  return entry;
+};
+
+Script2DeviceLogic.prototype.settleSetCallback = function (entry, error, value) {
+  if (entry.settled) {
+    return;
+  }
+
+  entry.settled = true;
+  if (entry.timer) {
+    clearTimeout(entry.timer);
+    entry.timer = null;
+  }
+
+  try {
+    entry.callback(error, error ? null : value);
+  } catch (callbackException) {
+    this.log.error(
+      `Set callback for ${this.name} threw an error: ${callbackException.message}`
+    );
+  }
 };
 
 Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
@@ -380,14 +450,8 @@ Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
       this.finishSetStateReconciliation(callbackError, powerOn);
     }
 
-    completedSet.callbacks.forEach((pendingCallback) => {
-      try {
-        pendingCallback(callbackError, callbackError ? null : powerOn);
-      } catch (callbackException) {
-        this.log.error(
-          `Set callback for ${this.name} threw an error: ${callbackException.message}`
-        );
-      }
+    completedSet.callbacks.forEach((callbackEntry) => {
+      this.settleSetCallback(callbackEntry, callbackError, powerOn);
     });
   });
 };
@@ -425,6 +489,7 @@ Script2DeviceLogic.prototype.resolveDeferredStateRequests = function (
 
 Script2DeviceLogic.prototype.finishSetStateReconciliation = function (setError, requestedState) {
   if (!setError) {
+    this.earlySetAcknowledged = false;
     this.resolveDeferredStateRequests(null, requestedState, "completed-set");
 
     const shouldReconcile = this.reconcileAfterSet;
@@ -437,12 +502,30 @@ Script2DeviceLogic.prototype.finishSetStateReconciliation = function (setError, 
 
   const shouldUpdateCharacteristic = this.reconcileAfterSet;
   this.reconcileAfterSet = false;
-  if (this.deferredStateRequests.length === 0 && !shouldUpdateCharacteristic) {
+  const mustReconcileAcknowledgedFailure = this.earlySetAcknowledged;
+  this.earlySetAcknowledged = false;
+  if (
+    this.deferredStateRequests.length === 0 &&
+    !shouldUpdateCharacteristic &&
+    !mustReconcileAcknowledgedFailure
+  ) {
     return;
   }
 
+  const reconciliationGeneration = this.stateGeneration;
   this.getState((error, poweredOn, source, nonFatalError) => {
-    if (!error && shouldUpdateCharacteristic && this.switchService) {
+    if (reconciliationGeneration !== this.stateGeneration) {
+      this.log.debug(
+        `Discarding stale post-set reconciliation for ${this.name}; generation changed from ${reconciliationGeneration} to ${this.stateGeneration}.`
+      );
+      return;
+    }
+
+    if (
+      !error &&
+      (shouldUpdateCharacteristic || mustReconcileAcknowledgedFailure) &&
+      this.switchService
+    ) {
       this.currentState = poweredOn;
       this.switchService.updateCharacteristic(Characteristic.On, poweredOn);
     }

@@ -6,7 +6,7 @@ const test = require('node:test');
 const plugin = require('../index');
 const { Script2DeviceLogic } = plugin;
 
-function createHarness() {
+function createHarness(config = {}) {
   const commands = [];
   const executor = (command, options, callback) => {
     commands.push({ command, options, callback });
@@ -22,6 +22,8 @@ function createHarness() {
     on: 'turn-on',
     off: 'turn-off',
     state: 'get-state',
+    homekit_set_ack_timeout_ms: 0,
+    ...config,
   }, executor);
 
   return { commands, logic };
@@ -239,4 +241,120 @@ test('deferred GETs remain pending until queued opposite sets finish', () => {
   assert.deepEqual(getResults, [
     { error: null, value: false, source: 'completed-set' },
   ]);
+});
+
+test('a long-running set is acknowledged before command completion', async () => {
+  const { commands, logic } = createHarness({ homekit_set_ack_timeout_ms: 10 });
+  const results = [];
+
+  logic.setState(true, (error, value) => results.push({ error, value }));
+  await new Promise((resolve) => setTimeout(resolve, 25));
+
+  assert.deepEqual(results, [{ error: null, value: true }]);
+  assert.equal(commands.length, 1);
+  assert.notEqual(logic.inFlightSet, null);
+
+  commands[0].callback(null, '', '');
+  assert.equal(results.length, 1);
+  assert.equal(logic.inFlightSet, null);
+});
+
+test('failure after an early acknowledgement triggers authoritative reconciliation', async () => {
+  const { commands, logic } = createHarness({ homekit_set_ack_timeout_ms: 10 });
+  const results = [];
+
+  logic.setState(true, (error, value) => results.push({ error, value }));
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  commands[0].callback(new Error('late failure'), '', '');
+
+  assert.deepEqual(results, [{ error: null, value: true }]);
+  assert.equal(commands.length, 2);
+  assert.equal(commands[1].command, 'get-state');
+
+  commands[1].callback(null, 'false\n', '');
+  assert.equal(logic.currentState, false);
+});
+
+test('early acknowledgement remains opt-in by default', () => {
+  const log = { debug() {}, error() {}, info() {}, warn() {} };
+  const logic = new Script2DeviceLogic(log, {
+    name: 'Default Switch',
+    on: 'turn-on',
+    off: 'turn-off',
+    state: 'get-state',
+  }, () => {});
+
+  assert.equal(logic.homekitSetAckTimeoutMs, 0);
+});
+
+test('optimistic acknowledgement is disabled without an authoritative state source', () => {
+  const { logic } = createHarness({
+    state: undefined,
+    homekit_set_ack_timeout_ms: 10,
+  });
+
+  assert.equal(logic.homekitSetAckTimeoutMs, 0);
+});
+
+test('multiple duplicate requests are each acknowledged exactly once', async () => {
+  const { commands, logic } = createHarness({ homekit_set_ack_timeout_ms: 10 });
+  const callbackCounts = [0, 0, 0];
+
+  callbackCounts.forEach((unused, index) => {
+    logic.setState(true, () => callbackCounts[index]++);
+  });
+  await new Promise((resolve) => setTimeout(resolve, 25));
+
+  assert.deepEqual(callbackCounts, [1, 1, 1]);
+  assert.equal(commands.length, 1);
+  assert.notEqual(logic.inFlightSet, null);
+
+  commands[0].callback(null, '', '');
+  assert.deepEqual(callbackCounts, [1, 1, 1]);
+});
+
+test('early acknowledgement does not advance an opposite-state queue', async () => {
+  const { commands, logic } = createHarness({ homekit_set_ack_timeout_ms: 10 });
+
+  logic.setState(true, () => {});
+  logic.setState(false, () => {});
+  await new Promise((resolve) => setTimeout(resolve, 25));
+
+  assert.equal(commands.length, 1);
+  assert.equal(logic.pendingSetQueue.length, 1);
+  assert.equal(logic.inFlightSet.requestedState, true);
+
+  commands[0].callback(null, '', '');
+  assert.equal(commands.length, 2);
+  assert.equal(commands[1].command, 'turn-off');
+});
+
+test('shutdown clears pending acknowledgement timers', async () => {
+  const { commands, logic } = createHarness({ homekit_set_ack_timeout_ms: 10 });
+  let callbackCount = 0;
+
+  logic.setState(true, () => callbackCount++);
+  logic.shutdown();
+  await new Promise((resolve) => setTimeout(resolve, 25));
+
+  assert.equal(callbackCount, 0);
+  commands[0].callback(null, '', '');
+  assert.equal(callbackCount, 1);
+});
+
+test('late failure reconciliation cannot overwrite a newer set generation', async () => {
+  const { commands, logic } = createHarness({ homekit_set_ack_timeout_ms: 10 });
+
+  logic.setState(false, () => {});
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  commands[0].callback(new Error('late OFF failure'), '', '');
+  assert.equal(commands[1].command, 'get-state');
+
+  logic.setState(true, () => {});
+  assert.equal(commands[2].command, 'turn-on');
+  commands[1].callback(null, 'false\n', '');
+  commands[2].callback(null, '', '');
+
+  assert.equal(logic.currentState, true);
+  assert.equal(logic.lastStateRead, null);
 });

@@ -266,3 +266,17 @@ Command serialization alone does not prevent the Home tile from temporarily disp
 7. Keep deferred GETs pending across queued opposite-state commands so they observe the final serialized outcome rather than an intermediate state.
 
 Additional regression coverage must verify GET deferral after success, authoritative reconciliation after failure, stale pre-set read rejection, and post-set polling reconciliation.
+
+### HomeKit callback deadline
+
+The external command timeout and the HomeKit/controller callback deadline are separate. A command may be allowed to run for 120 seconds while the Home app stops waiting for the synchronous set callback much sooner. To prevent that controller-layer timeout:
+
+1. Preserve backward compatibility with `homekit_set_ack_timeout_ms` defaulting to `0`, so callbacks wait for actual command completion unless explicitly configured.
+2. When opted in, acknowledge an unresolved set callback after the configured delay while continuing to track the command.
+3. Keep short-command behavior authoritative: a command that succeeds or fails before the acknowledgement deadline settles the callback with its real result.
+4. Require `state` or `fileState` for optimistic acknowledgement; disable it with a warning when authoritative late-failure reconciliation is impossible.
+5. Never invoke an early-acknowledged callback again when the command eventually completes.
+6. If an early-acknowledged command later fails, bypass the state cache, read actual state, and update HomeKit when a switch service is available.
+7. Continue deferring GET and poll presentation state until the command settles.
+
+Regression coverage must verify timely acknowledgement, callback-once behavior after eventual success, and authoritative reconciliation after an eventual failure.

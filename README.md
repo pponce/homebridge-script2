@@ -47,6 +47,8 @@ Name | Value | Required | Notes
 `state_cache_ttl_ms` | integer ms | no (default `1000`) | Cache TTL for burst reads
 `reset_state_cache_on_set` | `true/false` | no (default `false`) | Resets/seeds state cache after successful manual set
 `fail_on_state_exit_code` | `true/false` | no (default `false`) | Treat non-zero `state` exit code as read error
+`command_timeout` | integer ms | no (default `10000`) | Maximum runtime for ON, OFF, and state commands
+`homekit_set_ack_timeout_ms` | integer ms | no (default `0`) | Opt in to acknowledging a still-running ON/OFF request after this delay; requires `state` or `fileState`
 `unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
 
 ### `stateless_switches` item parameters
@@ -55,9 +57,30 @@ Name | Value | Required | Notes
 --- | --- | --- | ---
 `name` | _(custom)_ | yes | Accessory name shown in Home app
 `trigger` | _(custom)_ | yes | Script/command to execute trigger action
-`auto_reset_ms` | integer ms | no | Delay before Home tile auto-resets
+`auto_reset_ms` | integer ms | no (default `500`) | Delay before Home tile auto-resets
+`command_timeout` | integer ms | no (default `10000`) | Maximum runtime for the trigger command
 `stateless_trigger_on` | `on/off` | no (default `on`) | `on` triggers on ON; `off` triggers on OFF (tile defaults to ON)
 `unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
+
+### Command timing and long-running ON/OFF actions
+
+`command_timeout` and `homekit_set_ack_timeout_ms` control different deadlines:
+
+- `command_timeout` controls how long Script2 allows the external ON, OFF, state, or stateless trigger command to run. A command that exceeds this limit is reported as timed out. Increase it above the command's worst-case runtime for long-running scripts.
+- `homekit_set_ack_timeout_ms` applies only to stateful ON/OFF switches. Its backward-compatible default is `0`, which means the HomeKit set callback waits for actual command completion.
+- Set `homekit_set_ack_timeout_ms` to a positive integer to opt into early HomeKit acknowledgement. For example, `5000` acknowledges the request after five seconds while the external command continues under `command_timeout`.
+- Early acknowledgement does not complete or duplicate the external operation: Script2 keeps the command in flight, coalesces duplicate requests, serializes opposite requests, and defers GET/poll presentation updates until the command settles.
+- Optimistic acknowledgement requires `state` or `fileState`. If the external command later fails, Script2 bypasses the TTL cache and uses that state source to reconcile HomeKit. Without a state source, early acknowledgement is disabled with a warning.
+- `fail_on_state_exit_code` is independent of both timeout settings. It controls whether a non-zero **state command** exit is fatal when the state command still prints usable stdout.
+
+Recommended settings for a stateful command that may take up to two minutes:
+
+```json
+"command_timeout": 120000,
+"homekit_set_ack_timeout_ms": 5000
+```
+
+For existing synchronous behavior, omit `homekit_set_ack_timeout_ms` or set it to `0`.
 
 ### State script behavior for on_off_switches
 - The `state` script output is normalized to lowercase and compared against `on_value` (default `"true"`).
@@ -87,7 +110,9 @@ Name | Value | Required | Notes
         "on": "/opt/scripts/on.sh 1",
         "off": "/opt/scripts/off.sh 1",
         "state": "/opt/scripts/state.sh 1",
-        "on_value": "true"
+        "on_value": "true",
+        "command_timeout": 120000,
+        "homekit_set_ack_timeout_ms": 5000
       },
       {
         "name": "Outlet 2",
@@ -102,6 +127,7 @@ Name | Value | Required | Notes
         "name": "Outlet 1 Reboot",
         "trigger": "/opt/scripts/reboot.sh 1",
         "auto_reset_ms": 500,
+        "command_timeout": 30000,
         "stateless_trigger_on": "off"
       },
       {

@@ -48,6 +48,10 @@ test('setDeviceField stores numeric settings as numbers and deletes empty values
   assert.equal(device.command_timeout, 120000);
   assert.equal(typeof device.command_timeout, 'number');
 
+  setDeviceField(device, 'homekit_set_ack_timeout_ms', '5000');
+  assert.equal(device.homekit_set_ack_timeout_ms, 5000);
+  assert.equal(typeof device.homekit_set_ack_timeout_ms, 'number');
+
   setDeviceField(device, 'command_timeout', '');
   assert.equal(Object.hasOwn(device, 'command_timeout'), false);
 });
