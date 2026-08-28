@@ -218,3 +218,37 @@ Then manually verify in a real Homebridge UI that:
 - Invalid configuration cannot be silently saved.
 - Save/synchronization failures are visible and do not discard the user's local edits.
 - Automated tests cover configuration construction, preservation, validation, typing, and synchronization timing.
+
+## 3. Duplicate and overlapping HomeKit set commands
+
+### Problem statement
+
+Repeated HomeKit set events can arrive before an ON/OFF command completes. Starting a new process for every duplicate event can run the same script concurrently, while allowing opposite ON/OFF scripts to overlap can leave the external device in an undefined state.
+
+### Selected behavior
+
+1. Maintain one per-accessory `inFlightSet` record with its requested state and all callbacks waiting for that result.
+2. If the same state is requested while that command is active and no opposite request is already queued, attach the new callback to the active result without starting another command.
+3. Serialize an opposite-state request behind the active command.
+4. Coalesce adjacent queued requests for the same state.
+5. Preserve ordering when requests alternate; for example, an ON request received after a queued OFF request remains behind that OFF request rather than incorrectly joining the earlier active ON operation.
+6. Clear the completed in-flight record before invoking HomeKit callbacks, start at most one queued command, and ignore a duplicate executor completion.
+7. Settle every coalesced callback exactly once with the shared command result.
+8. Keep `bindServices()` idempotent by removing previous `set` and `get` listeners before registering one handler of each type.
+9. Do not initiate any new set operation from an error callback path.
+
+### Regression coverage
+
+- Two simultaneous ON requests execute the ON command once and both callbacks receive the same success.
+- Two simultaneous ON requests execute the ON command once and both callbacks receive the same failure.
+- ON followed by OFF executes serially with no process overlap.
+- A duplicate executor completion cannot invoke a HomeKit callback twice.
+- Binding the same accessory services repeatedly leaves exactly one `set` handler and one `get` handler.
+
+### Acceptance criteria
+
+- One non-duplicate HomeKit set request invokes one ON/OFF command.
+- Duplicate requests for the active desired state share its pending result when no intervening opposite request changes ordering.
+- No two ON/OFF commands overlap for one accessory.
+- Callback or executor error handling cannot recursively start a duplicate command.
+- Each request callback is invoked exactly once.
