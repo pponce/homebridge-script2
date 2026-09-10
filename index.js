@@ -274,7 +274,7 @@ Script2DeviceLogic.prototype.shutdown = function () {
   for (const callback of this.triggerCallbacks.splice(0)) callback(error, null);
   this.triggerInFlight = false;
   for (const child of this.children) {
-    try { child.kill("SIGTERM"); } catch { this.log.warn(`${this.name}: command shutdown failed.`); }
+    try { child.kill("SIGKILL"); } catch { this.log.warn(`${this.name}: command shutdown failed.`); }
   }
   this.children.clear();
 };

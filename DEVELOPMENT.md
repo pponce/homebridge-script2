@@ -6,7 +6,7 @@ This beta implements the platform-only certification plan. The stable latest cha
 
 Run `npm ci --ignore-scripts`, `npm run check`, `npm test`, `npm run test:installed`, and `npm run check:package`. Browser checks use `npm run test:ui` with Playwright available through `SCRIPT2_BROWSER_MODULES` or normal local node_modules. CI installs its own pinned Playwright and Chromium.
 
-Production versions are pinned in package-lock.json. The lock pins the published tarball URLs; integrity metadata should be refreshed with npm when registry access is available. The authoring environment blocked npm downloads and Chromium installation, so installed-package/browser results must come from CI or the maintainer's connected host. Do not interpret syntax/unit/package-content checks as a complete Homebridge installation test.
+Production versions are pinned in package-lock.json. The lock pins the published tarball URLs; npm ci has successfully installed these versions in GitHub Actions. Integrity metadata can be refreshed with npm on a connected host. The authoring environment blocked npm downloads and Chromium installation, so installed-package/browser results must come from CI or the maintainer's connected host. Do not interpret syntax/unit/package-content checks as a complete Homebridge installation test.
 
 ## Publish the beta from SSH
 
