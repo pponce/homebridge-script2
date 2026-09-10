@@ -19,6 +19,8 @@ jobs:
         with:
           node-version: '${{ matrix.node }}'
           cache: npm
+      - name: SSH publisher terminal regression
+        run: python3 scripts/check-publisher.py
       - run: npm ci --ignore-scripts
       - run: npm run check
       - run: npm test

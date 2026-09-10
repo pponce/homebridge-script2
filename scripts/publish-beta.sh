@@ -6,6 +6,13 @@ script2_repo='pponce/homebridge-script2'
 script2_branch='certification-v1-beta'
 script2_registry='https://registry.npmjs.org/'
 export GH_HOST=github.com
+# The SSH wrapper reads its program from a heredoc. Reconnect interactive
+# commands to the terminal so npm can wait for browser authentication.
+if ! ( : </dev/tty ) 2>/dev/null; then
+  echo 'STOP: run this publisher from an interactive SSH terminal (ssh -t when needed).'
+  false
+fi
+script2_interactive() { "$@" </dev/tty >/dev/tty; }
 for script2_tool in git node npm tar gh; do command -v "$script2_tool" >/dev/null; done
 cd "$(git rev-parse --show-toplevel)"
 if [ "$(git branch --show-current)" != "$script2_branch" ]; then echo 'STOP: switch to certification-v1-beta first.'; false; fi
@@ -18,13 +25,13 @@ git fetch origin "$script2_branch"
 script2_source="$(git rev-parse HEAD)"
 if [ "$script2_source" != "$(git rev-parse "origin/$script2_branch")" ]; then echo 'STOP: local branch must match its remote commit.'; false; fi
 node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===22&&b>=13)||a===24))throw Error("Use Node 22.13+ within Node 22, or Node 24.");'
-if ! gh auth status --hostname github.com; then gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key; fi
+if ! gh auth status --hostname github.com >/dev/null 2>&1; then script2_interactive gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key; fi
 script2_gh_user="$(gh api user --jq .login)"
 if [ "$script2_gh_user" != 'pponce' ]; then echo 'STOP: GitHub account must be pponce.'; false; fi
 script2_npm_user="$(npm whoami --registry="$script2_registry" 2>/dev/null || true)"
 if [ "$script2_npm_user" != 'klidec' ]; then
   echo 'Log in as klidec. Open the displayed URL on your Mac if requested.'
-  npm login --auth-type=web --browser=false --registry="$script2_registry"
+  script2_interactive npm login --auth-type=web --browser=false --registry="$script2_registry"
 fi
 script2_npm_user="$(npm whoami --registry="$script2_registry")"
 if [ "$script2_npm_user" != 'klidec' ]; then echo 'STOP: npm account must be klidec.'; false; fi
@@ -61,14 +68,16 @@ npm install --prefix smoke --ignore-scripts --package-lock=false --registry="$sc
 SCRIPT2_PACKAGE_ROOT="$script2_work/smoke/node_modules/homebridge-script2" node --test test/installed.cjs
 
 echo '===== PUBLISH NPM BETA ====='
-npm publish "$script2_archive" --ignore-scripts --access public --tag beta --registry="$script2_registry"
+echo 'If npm displays an authentication URL, open it in your local browser and complete authentication.'
+echo 'Keep this SSH session running; npm will wait and resume after approval.'
+script2_interactive npm publish "./$script2_archive" --ignore-scripts --access public --tag beta --auth-type=web --browser=false --registry="$script2_registry"
 echo "Published homebridge-script2@$script2_version as $script2_npm_user under beta."
 echo '===== CREATE GITHUB PRERELEASE ====='
-if gh release create "$script2_tag" "$script2_archive" --repo "$script2_repo" --target "$script2_source" --title "Script2 $script2_version" --notes-file "$script2_notes" --prerelease --latest=false; then
+if gh release create "$script2_tag" "$script2_archive" assets/homebridge-script2-icon.png assets/homebridge-script2-icon-512.png --repo "$script2_repo" --target "$script2_source" --title "Script2 $script2_version" --notes-file "$script2_notes" --prerelease --latest=false; then
   echo "GitHub prerelease: https://github.com/$script2_repo/releases/tag/$script2_tag"
 else
   echo 'NPM SUCCEEDED; GITHUB PRERELEASE DID NOT FINISH. Inspect for a partial release. If absent, retry only:'
-  printf 'gh release create %q %q --repo %q --target %q --title %q --notes-file %q --prerelease --latest=false\n' "$script2_tag" "$script2_work/$script2_archive" "$script2_repo" "$script2_source" "Script2 $script2_version" "$script2_work/$script2_notes"
+  printf 'gh release create %q %q %q %q --repo %q --target %q --title %q --notes-file %q --prerelease --latest=false\n' "$script2_tag" "$script2_work/$script2_archive" "$script2_work/assets/homebridge-script2-icon.png" "$script2_work/assets/homebridge-script2-icon-512.png" "$script2_repo" "$script2_source" "Script2 $script2_version" "$script2_work/$script2_notes"
   echo 'Do not publish the same npm version again.'
   false
 fi
