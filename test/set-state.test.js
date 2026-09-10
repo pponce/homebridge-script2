@@ -329,7 +329,7 @@ test('early acknowledgement does not advance an opposite-state queue', async () 
   assert.equal(commands[1].command, 'turn-off');
 });
 
-test('shutdown clears pending acknowledgement timers', async () => {
+test('shutdown settles pending requests and ignores late completion', async () => {
   const { commands, logic } = createHarness({ homekit_set_ack_timeout_ms: 10 });
   let callbackCount = 0;
 
@@ -337,7 +337,7 @@ test('shutdown clears pending acknowledgement timers', async () => {
   logic.shutdown();
   await new Promise((resolve) => setTimeout(resolve, 25));
 
-  assert.equal(callbackCount, 0);
+  assert.equal(callbackCount, 1);
   commands[0].callback(null, '', '');
   assert.equal(callbackCount, 1);
 });
@@ -358,3 +358,4 @@ test('late failure reconciliation cannot overwrite a newer set generation', asyn
   assert.equal(logic.currentState, true);
   assert.equal(logic.lastStateRead, null);
 });
+

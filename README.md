@@ -1,27 +1,44 @@
-homebridge-script2
-==================
+<p align="center"><img src="https://raw.githubusercontent.com/pponce/homebridge-script2/certification-v1-beta/assets/homebridge-script2-icon-512.png" width="128" alt="Script2 terminal and home icon"></p>
+
+# homebridge-script2
 
 Execute custom scripts via HomeKit / Apple Home using Homebridge.
 
+**BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING. This beta removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/MIGRATION.md). Legacy configurations will no longer run.**
+
+**Beta release:** choose **1.0.0-beta.1** / **beta** explicitly. Stable `latest` remains on the prior release. This project is preparing for verification; it is not yet certified.
+
+## Install the beta
+
+1. Save a Homebridge backup and your full config.json.
+2. Follow [Migration](#migration) if you use an older configuration.
+3. In Homebridge UI, install Script2 and select **1.0.0-beta.1** using the plugin version selector.
+4. Open Settings, add On/Off or Stateless switches, choose a state source, and review Advanced settings. Opening or saving settings never runs commands.
+5. Use Homebridge Save, then restart the instance or child bridge running Script2.
+
+Requires Node **22.13+ within Node 22, or Node 24**, and Homebridge **1.8+ within v1, or v2**. Commands run as the Homebridge service user and must not require a terminal or prompts.
+
+## Migration
+
+**Save your old configuration before installing.** Only `Script2Platform` with `on_off_switches` and `stateless_switches` is supported. [The migration guide](MIGRATION.md) includes before/after JSON for old standalone accessories and platform lists, every removed alias, HomeKit identity guidance, and rollback.
+
+Existing canonical entries do not need a list-format change. Keep names and serial values unchanged, remove any legacy `device_type`, and correct values rejected by validation. The editor never silently converts old configuration.
+
+## What distinguishes Script2
+
+Script2 combines command- or file-based state with per-switch command serialization, coalesced reads, an adjustable TTL cache, and separate command-execution and HomeKit-acknowledgement deadlines. A late failure after early acknowledgement bypasses the cache and reconciles HomeKit from the state source. Stateless switches can trigger on either On or Off and reset without sending a second command. See [feature comparison and suggested verification text](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/VERIFICATION.md). These are useful combined behaviors; no claim is made that every individual option is exclusive to Script2.
+
+## Logging and behavior notes
+
+Successful ON/OFF and trigger command completions are logged at info level. Routine successful reads, polling, and cache/coalescing information are debug-only. Errors identify the accessory and action; raw command strings/stdout/stderr are omitted because scripts may contain credentials. An acknowledged request is not necessarily a completed action.
+
+Timeouts, terminated state commands and output overflow are failures even if partial output was printed. Ordinary nonzero state exits still honor `fail_on_state_exit_code`. ON/OFF and trigger commands retain their stderr-as-failure policy. Concurrent stateless activations share one execution; later intentional activations are allowed. The reset delay begins when the command settles, and resetting the tile never sends another command. Shutdown rejects pending work, stops tracked processes/watchers/timers, and ignores late completions. Arbitrary scripts can spawn detached descendants; stopping the immediate process cannot guarantee those descendants stop.
+
+Plugin state caching is in memory and Homebridge manages accessory persistence. Script2 reads/watches user-selected state files; it does not create them. Any plugin-owned files must be inside Homebridge's actual storage directory. Adjust example script/log paths to your installation.
+
+[Changelog](CHANGELOG.md) · [Full beta release notes](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/releases/v1.0.0-beta.1.md)
+
 Core of the code written by [@xxcombat](https://github.com/xxcombat/). Original plugin: [homebridge-script](https://github.com/xxcombat/homebridge-script).
-
-## Recommended configuration
-
-Use **platform mode** with:
-- `on_off_switches` for normal ON/OFF devices
-- `stateless_switches` for trigger-style devices
-
-> Legacy formats are still supported:
-> - platform `devices` array
-> - accessory-mode `accessories` entries
->
-> See **[LEGACY.md](./LEGACY.md)** for legacy field details, examples, and migration guidance.
-
-## Homebridge UI Configuration
-
-- In Homebridge UI, go to **Plugins → homebridge-script2 → Plugin Config**.
-- Use the **On/Off Switches** and **Stateless Switches** sections.
-- Save and restart Homebridge when prompted.
 
 ## Platform configuration parameters
 
@@ -29,7 +46,6 @@ Use **platform mode** with:
 | --- | --- | --- | --- |
 | `on_off_switches` | array | no | Main section for standard ON/OFF switches |
 | `stateless_switches` | array | no | Main section for one-shot trigger switches |
-| `devices` | array | no (legacy only) | Legacy compatibility list (see [LEGACY.md](./LEGACY.md)) |
 
 ### `on_off_switches` item parameters
 
@@ -143,10 +159,10 @@ For existing synchronous behavior, omit `homekit_set_ack_timeout_ms` or set it t
 
 ## Installation
 
-(Requires Node.js >=20.19.0)
+(Requires Node.js 22.13+ within Node 22, or Node 24.)
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install this plugin using: `npm install -g homebridge-script2`
+2. Install this beta using the Homebridge UI version selector: **1.0.0-beta.1**
 3. Update your configuration file.
 4. Ensure scripts are executable and accessible by the Homebridge service user.
 
@@ -243,7 +259,7 @@ Add logging in your script so errors are visible:
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-exec >>/tmp/homebridge-script2.log 2>&1
+exec >>/var/lib/homebridge/script2.log 2>&1
 
 echo "[$(date)] Starting light_on.sh as $(whoami) in $(pwd)"
 /usr/bin/python3 /home/homebridge/scripts/device_on.py
@@ -253,7 +269,7 @@ echo "[$(date)] Done"
 Then inspect:
 
 ```bash
-tail -n 100 /tmp/homebridge-script2.log
+tail -n 100 /var/lib/homebridge/script2.log
 ```
 
 ### Could line endings break my script?
@@ -294,3 +310,4 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 - Add logging and fail-fast flags (`set -euo pipefail`) in shell scripts.
 - Keep scripts minimal; move complex logic to separate files you can test independently.
 - Restart Homebridge after major script/permission changes to ensure a clean environment.
+

@@ -1,0 +1,41 @@
+name: Script2 beta checks
+on:
+  push:
+    branches: [master, certification-v1-beta]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+        homebridge: ['^1.8.0', '^2.0.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '${{ matrix.node }}'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check && npm test && npm run test:installed && npm run check:package
+      - name: Install exact package with supported Homebridge
+        env:
+          SCRIPT2_HB_VERSION: '${{ matrix.homebridge }}'
+        run: |
+          npm pack --ignore-scripts --json > "$RUNNER_TEMP/packed.json"
+          script2_archive="$(node -p 'require(process.env.RUNNER_TEMP + "/packed.json")[0].filename')"
+          npm install --prefix "$RUNNER_TEMP/script2-install" --ignore-scripts "$PWD/$script2_archive" "homebridge@$SCRIPT2_HB_VERSION"
+          SCRIPT2_PACKAGE_ROOT="$RUNNER_TEMP/script2-install/node_modules/homebridge-script2" node --test test/installed.cjs
+          SCRIPT2_HB_ROOT="$RUNNER_TEMP/script2-install/node_modules/homebridge" SCRIPT2_PACKAGE_ROOT="$RUNNER_TEMP/script2-install/node_modules/homebridge-script2" node scripts/homebridge-smoke.cjs
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install --prefix "$RUNNER_TEMP/script2-browser" playwright@1.56.1
+      - run: node "$RUNNER_TEMP/script2-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - run: SCRIPT2_BROWSER_MODULES="$RUNNER_TEMP/script2-browser/node_modules" npm run test:ui

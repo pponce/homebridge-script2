@@ -40,12 +40,6 @@
       stateless_switches: clone(state.stateless_switches || []),
     };
 
-    if ((state.devices || []).length > 0) {
-      next.devices = clone(state.devices);
-    } else {
-      delete next.devices;
-    }
-
     if (targetIndex >= 0 && targetIndex < blocks.length) {
       blocks[targetIndex] = next;
     } else {
@@ -60,3 +54,4 @@
     setDeviceField,
   };
 }));
+

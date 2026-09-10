@@ -1,0 +1,16 @@
+'use strict';
+const path=require('node:path');
+const assert=require('node:assert/strict');
+const { API }=require(path.join(process.env.SCRIPT2_HB_ROOT,'lib/api.js'));
+const api=new API();let Platform;api.registerPlatform=(plugin,name,ctor)=>{Platform=ctor;};
+const plugin=require(process.env.SCRIPT2_PACKAGE_ROOT);
+plugin(api);
+const log=Object.fromEntries(['debug','info','warn','error'].map(level=>[level,()=>{}]));
+const platform=new Platform(log,{platform:'Script2Platform',stateless_switches:[{name:'Smoke trigger',trigger:'unused-command'}]},api);
+api.emit('didFinishLaunching');
+assert.equal(platform.instances.size,1);
+const accessory=[...platform.accessories.values()][0];
+assert.ok(accessory.getService(api.hap.Service.Switch));
+api.emit('shutdown');
+assert.equal([...platform.instances.values()][0].stopped,true);
+console.log('Installed Homebridge API/accessory smoke check passed.');

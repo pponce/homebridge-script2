@@ -1,0 +1,25 @@
+{
+  echo '===== BEGIN SCRIPT2 BETA — COPY OUTPUT FROM HERE ====='
+  bash <<'SCRIPT2_BETA'
+set -e
+set -o pipefail
+trap 'script2_status=$?; echo "===== END SCRIPT2 BETA — STATUS $script2_status — COPY THROUGH HERE ====="' EXIT
+cd "$HOME/devProjects/homebridge-script2"
+if [ -n "$(git status --porcelain)" ]; then
+  echo 'STOP: local changes found. Commit or move them before updating.'
+  false
+fi
+case "$(git remote get-url origin)" in
+  git@github.com:pponce/homebridge-script2.git|https://github.com/pponce/homebridge-script2.git|https://github.com/pponce/homebridge-script2|ssh://git@github.com/pponce/homebridge-script2.git) ;;
+  *) echo 'STOP: unexpected origin repository.'; false ;;
+esac
+git fetch origin certification-v1-beta
+if git show-ref --verify --quiet refs/heads/certification-v1-beta; then
+  git switch certification-v1-beta
+else
+  git switch --track -c certification-v1-beta origin/certification-v1-beta
+fi
+git pull --ff-only origin certification-v1-beta
+bash scripts/publish-beta.sh
+SCRIPT2_BETA
+}

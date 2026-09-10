@@ -1,25 +1,57 @@
 {
   "name": "homebridge-script2",
-  "version": "0.4.6",
+  "version": "1.0.0-beta.1",
   "license": "MIT",
-  "description": "script plugin for homebridge: https://github.com/nfarina/homebridge",
+  "description": "HomeKit script switches with file or command state, shared reads, serialized actions and optional early acknowledgement",
   "keywords": [
     "homebridge-plugin",
-    "homebridge-script2"
+    "homebridge-script2",
+    "supports-hap"
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/pponce/homebridge-script2.git"
+    "url": "git+https://github.com/pponce/homebridge-script2.git"
   },
   "engines": {
-    "homebridge": ">=1.0.0 || ^2.0.0-beta.0",
-    "node": ">=20.19.0"
+    "node": "^22.13.0 || ^24.0.0",
+    "homebridge": "^1.8.0 || ^2.0.0"
   },
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "check": "node scripts/check-source.js",
+    "test:ui": "node --test test/ui.browser.cjs",
+    "check:package": "node scripts/check-package.js",
+    "prepublishOnly": "npm run check && npm test",
+    "test:installed": "node --test test/installed.cjs"
   },
   "dependencies": {
-    "@homebridge/plugin-ui-utils": "^2.0.1",
+    "@homebridge/plugin-ui-utils": "2.2.6",
     "chokidar": "5.0.0"
+  },
+  "displayName": "Script2",
+  "main": "index.js",
+  "homepage": "https://github.com/pponce/homebridge-script2#readme",
+  "bugs": {
+    "url": "https://github.com/pponce/homebridge-script2/issues"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "homebridge-ui",
+    "config.schema.json",
+    "README.md",
+    "CHANGELOG.md",
+    "MIGRATION.md",
+    "LICENSE",
+    "assets/homebridge-script2-icon.png",
+    "assets/homebridge-script2-icon-512.png"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "overrides": {
+    "readdirp": "5.0.0"
   }
 }

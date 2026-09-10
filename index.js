@@ -3,18 +3,15 @@ let Characteristic;
 
 const exec = require("child_process").exec;
 const { existsSync } = require("fs");
-const chokidar = require("chokidar");
+const { validate } = require("./homebridge-ui/public/validation");
+const { safeLogger, onceCallback } = require("./lib/safety");
 
 const PLUGIN_NAME = "homebridge-script2";
-const ACCESSORY_NAME = "Script2";
 const PLATFORM_NAME = "Script2Platform";
 
 module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
-
-  // Legacy accessory mode (backward compatible)
-  homebridge.registerAccessory(PLUGIN_NAME, ACCESSORY_NAME, script2Accessory);
 
   // New dynamic platform mode (cached accessories + configureAccessory)
   homebridge.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, Script2Platform, true);
@@ -49,123 +46,90 @@ function sanitizeDeviceConfig(deviceConfig) {
 
 
 function getConfiguredDevices(config) {
-  const legacyDevices = Array.isArray(config?.devices) ? config.devices : [];
-  const statefulDevices = Array.isArray(config?.on_off_switches)
-    ? config.on_off_switches.map((device) => ({ ...device, device_type: "switch" }))
-    : Array.isArray(config?.["On/Off Switches"])
-      ? config["On/Off Switches"].map((device) => ({ ...device, device_type: "switch" }))
-      : Array.isArray(config?.stateful_devices)
-        ? config.stateful_devices.map((device) => ({ ...device, device_type: "switch" }))
-        : [];
-  const statelessDevices = Array.isArray(config?.stateless_switches)
-    ? config.stateless_switches.map((device) => ({ ...device, device_type: "stateless" }))
-    : Array.isArray(config?.["Stateless Switches"])
-      ? config["Stateless Switches"].map((device) => ({ ...device, device_type: "stateless" }))
-      : Array.isArray(config?.stateless_devices)
-        ? config.stateless_devices.map((device) => ({ ...device, device_type: "stateless" }))
-        : [];
-
-  return [...legacyDevices, ...statefulDevices, ...statelessDevices];
+  return [
+    ...(config.on_off_switches || []).map(d => ({ ...d, device_type: "switch" })),
+    ...(config.stateless_switches || []).map(d => ({ ...d, device_type: "stateless" })),
+  ];
 }
 
 class Script2Platform {
   constructor(log, config, api) {
-    this.log = log;
-    this.config = config || {};
+    this.log = safeLogger(log);
+    this.config = config;
     this.api = api;
     this.accessories = new Map();
     this.instances = new Map();
-
-    this.api.on("didFinishLaunching", () => {
-      this.discoverDevices();
+    this.stopped = false;
+    api.on("shutdown", () => {
+      this.stopped = true;
+      for (const instance of this.instances.values()) instance.shutdown();
+    });
+    api.on("didFinishLaunching", () => {
+      if (this.stopped || !this.config) return;
+      try { this.discoverDevices(); }
+      catch { this.log.error("Script2 setup failed; cached accessories were preserved. Check configuration and restart."); }
     });
   }
 
-  configureAccessory(accessory) {
-    this.log.info(`Restoring cached accessory: ${accessory.displayName}`);
-    this.accessories.set(accessory.UUID, accessory);
-  }
+  configureAccessory(accessory) { this.accessories.set(accessory.UUID, accessory); }
 
   discoverDevices() {
-    const devices = getConfiguredDevices(this.config);
-
-    if (devices.length === 0) {
-      this.log.warn("No devices configured for Script2Platform.");
+    const result = validate(this.config);
+    if (!result.valid) {
+      for (const message of result.errors) this.log.error(message);
       return;
     }
-
-    const configuredUuids = new Set();
-
-    for (const rawDeviceConfig of devices) {
-      const deviceConfig = sanitizeDeviceConfig(rawDeviceConfig);
-      const name = deviceConfig?.name;
-      if (!name) {
-        this.log.debug("Ignoring incomplete device entry without name.");
-        continue;
+    const devices = getConfiguredDevices(this.config);
+    // Only explicit empty lists represent a deliberate removal of every device.
+    if (!devices.length && !Object.hasOwn(this.config, "on_off_switches") && !Object.hasOwn(this.config, "stateless_switches")) return;
+    const wanted = new Set();
+    const created = [];
+    try {
+      for (const raw of devices) {
+        const config = sanitizeDeviceConfig(raw);
+        const uuid = this.api.hap.uuid.generate(`${PLUGIN_NAME}:${config.name}`);
+        wanted.add(uuid);
+        let accessory = this.accessories.get(uuid);
+        const isNew = !accessory;
+        if (isNew) accessory = new this.api.platformAccessory(config.name, uuid);
+        this.instances.get(uuid)?.shutdown();
+        const instance = new Script2DeviceLogic(this.log, config);
+        created.push(instance);
+        // Bind without starting commands/watchers until all accessories are ready.
+        instance.bindServices(accessory, false);
+        accessory.context.device = config;
+        if (isNew) this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        else this.api.updatePlatformAccessories([accessory]);
+        this.accessories.set(uuid, accessory);
+        this.instances.set(uuid, instance);
       }
-
-      const uuid = this.api.hap.uuid.generate(`${PLUGIN_NAME}:${name}`);
-      configuredUuids.add(uuid);
-
-      let platformAccessory = this.accessories.get(uuid);
-      if (platformAccessory) {
-        this.log.info(`Configuring cached platform accessory: ${name}`);
-        platformAccessory.context.device = deviceConfig;
-        this.api.updatePlatformAccessories([platformAccessory]);
-      } else {
-        this.log.info(`Adding new platform accessory: ${name}`);
-        platformAccessory = new this.api.platformAccessory(name, uuid);
-        platformAccessory.context.device = deviceConfig;
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [platformAccessory]);
-        this.accessories.set(uuid, platformAccessory);
-      }
-
-      const instance = new Script2DeviceLogic(this.log, platformAccessory.context.device);
-      instance.bindServices(platformAccessory);
-      this.instances.set(uuid, instance);
+      for (const instance of created) instance.startMonitoring();
+    } catch {
+      for (const instance of created) instance.shutdown();
+      this.log.error("Script2 device setup failed; monitoring stopped and cached accessories preserved. Check device configuration and restart.");
+      return;
     }
-
-    for (const [uuid, accessory] of this.accessories.entries()) {
-      if (!configuredUuids.has(uuid)) {
-        this.log.info(`Removing stale cached accessory: ${accessory.displayName}`);
+    for (const [uuid, accessory] of this.accessories) {
+      if (!wanted.has(uuid)) {
+        this.instances.get(uuid)?.shutdown();
         this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.instances.delete(uuid);
         this.accessories.delete(uuid);
-        const staleInstance = this.instances.get(uuid);
-        if (staleInstance) {
-          staleInstance.shutdown();
-          this.instances.delete(uuid);
-        }
       }
     }
   }
 }
 
-function script2Accessory(log, config) {
-  this.logic = new Script2DeviceLogic(log, config);
-}
-
-script2Accessory.prototype.setState = function (powerOn, callback) {
-  this.logic.setState(powerOn, callback);
-};
-
-script2Accessory.prototype.getState = function (callback) {
-  this.logic.getState(callback);
-};
-
-script2Accessory.prototype.getServices = function () {
-  return this.logic.buildServices();
-};
-
 function Script2DeviceLogic(log, config, commandExecutor = exec) {
-  this.log = log;
+  this.log = safeLogger(log);
   this.service = "Switch";
 
   this.name = config["name"];
   this.onCommand = config["on"];
   this.offCommand = config["off"];
   this.deviceType = config["device_type"] === "stateless" ? "stateless" : "switch";
-  this.triggerCommand = config["trigger"] || config["on"] || false;
-  this.autoResetMs = Number(config["auto_reset_ms"] || 500);
+  this.triggerCommand = config["trigger"] || false;
+  this.autoResetMs = Number(config["auto_reset_ms"] ?? 500);
   this.commandTimeout = Number(config["command_timeout"] ?? 10000);
   this.homekitSetAckTimeoutMs = Number(config["homekit_set_ack_timeout_ms"] ?? 0);
   this.statelessTriggerOn = config["stateless_trigger_on"] === "off" ? "off" : "on";
@@ -180,7 +144,7 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
   this.resetStateCacheOnSet = config["reset_state_cache_on_set"] === true;
   this.failOnStateExitCode = config["fail_on_state_exit_code"] === true;
   this.uniqueSerial = config["unique_serial"] || "script2 Serial Number";
-  this.onValue = this.onValue.trim().toLowerCase();
+  this.onValue = String(this.onValue).trim().toLowerCase();
   this.watcher = null;
   this.pollTimer = null;
   this.lastStateRead = null;
@@ -190,7 +154,15 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
   this.reconcileAfterSet = false;
   this.stateGeneration = 0;
   this.switchService = null;
-  this.commandExecutor = commandExecutor;
+  this.rawExecutor = commandExecutor;
+  this.children = new Set();
+  this.deadlines = new Set();
+  this.stopped = false;
+  this.resetTimer = null;
+  this.triggerCallbacks = [];
+  this.triggerInFlight = false;
+  this.commandExecutor = this.executeCommand.bind(this);
+  this.watchFactory = (...args) => require("chokidar").watch(...args);
   this.inFlightSet = null;
   this.pendingSetQueue = [];
   this.earlySetAcknowledged = false;
@@ -231,51 +203,79 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
   }
 }
 
-Script2DeviceLogic.prototype.formatCommandDiagnostics = function (
-  action,
-  command,
-  error,
-  stdout,
-  stderr
-) {
-  const exitCode = error?.code ?? 0;
-  const signal = error?.signal ? `, signal=${error.signal}` : "";
-  const errorMessage = error?.message ?? "none";
-  const trimmedStdout = (stdout ?? "").trim();
-  const trimmedStderr = (stderr ?? "").trim();
+Script2DeviceLogic.prototype.formatCommandDiagnostics = function (action, command, error) {
+  const code = typeof error?.code === "number" ? error.code : "unavailable";
+  return `${this.name}: ${action} command ${error?.killed ? "timed out or was terminated" : "failed"} (exit code: ${code}). Check the script as the Homebridge service user. Command text and output are omitted.`;
+};
 
-  // child_process.exec() sets killed=true when the process was terminated
-  // because the configured timeout was reached.
-  if (error?.killed === true) {
-    return `${this.name} ${action} command timed out after ${this.commandTimeout}ms`;
+Script2DeviceLogic.prototype.executeCommand = function (command, options, callback) {
+  if (this.stopped) return;
+  let child;
+  let completed = false;
+  let deadline;
+  const finish = (error, stdout = "", stderr = "") => {
+    if (completed) return;
+    completed = true;
+    clearTimeout(deadline);
+    this.deadlines.delete(deadline);
+    if (child) this.children.delete(child);
+    if (this.stopped) return;
+    try { callback(error, String(stdout ?? ""), String(stderr ?? "")); }
+    catch {
+      this.log.error(`${this.name}: internal command completion failed; stopping this device until restart.`);
+      this.shutdown();
+    }
+  };
+  try {
+    deadline = setTimeout(() => {
+      try { child?.kill("SIGKILL"); } catch { this.log.warn(`${this.name}: timed-out process could not be stopped.`); }
+      finish(Object.assign(new Error("Command deadline exceeded."), { killed: true }));
+    }, options.timeout);
+    this.deadlines.add(deadline);
+    deadline.unref?.();
+    child = this.rawExecutor(command, { ...options, killSignal: "SIGKILL", maxBuffer: 1024 * 1024 }, finish);
+    if (child && !completed) {
+      this.children.add(child);
+      child.stdin?.on("error", () => {});
+      child.stdin?.end();
+    }
+  } catch (error) { finish(error); }
+};
+
+Script2DeviceLogic.prototype.stopMonitoring = function () {
+  clearInterval(this.pollTimer);
+  this.pollTimer = null;
+  if (this.watcher) {
+    const watcher = this.watcher;
+    this.watcher = null;
+    try { Promise.resolve(watcher.close()).catch(() => this.log.warn(`${this.name}: watcher close failed.`)); }
+    catch { this.log.warn(`${this.name}: watcher close failed.`); }
   }
-
-  return `${this.name} ${action} command diagnostics: exitCode=${exitCode}${signal}, errorMessage="${errorMessage}", stdout="${trimmedStdout}", stderr="${trimmedStderr}", command="${command}"`;
 };
 
 Script2DeviceLogic.prototype.shutdown = function () {
-  if (this.pollTimer) {
-    clearInterval(this.pollTimer);
-    this.pollTimer = null;
+  if (this.stopped) return;
+  this.stopped = true;
+  this.stopMonitoring();
+  clearTimeout(this.resetTimer);
+  for (const deadline of this.deadlines) clearTimeout(deadline);
+  this.deadlines.clear();
+  this.resetTimer = null;
+  const error = new Error("Script2 device stopped.");
+  const sets = [this.inFlightSet, ...this.pendingSetQueue].filter(Boolean);
+  this.inFlightSet = null;
+  this.pendingSetQueue = [];
+  for (const request of sets) for (const entry of request.callbacks) this.settleSetCallback(entry, error);
+  const reads = [...(this.inFlightStateRequest?.requests || []), ...this.deferredStateRequests];
+  this.inFlightStateRequest = null;
+  this.deferredStateRequests = [];
+  for (const request of reads) request.callback(error, null);
+  for (const callback of this.triggerCallbacks.splice(0)) callback(error, null);
+  this.triggerInFlight = false;
+  for (const child of this.children) {
+    try { child.kill("SIGTERM"); } catch { this.log.warn(`${this.name}: command shutdown failed.`); }
   }
-
-  if (this.watcher) {
-    this.watcher.close().catch((err) => {
-      this.log.warn(`Error while closing file watcher for ${this.name}: ${err.message}`);
-    });
-    this.watcher = null;
-  }
-
-  const callbackEntries = [
-    ...(this.inFlightSet?.callbacks || []),
-    ...this.pendingSetQueue.flatMap((setRequest) => setRequest.callbacks),
-  ];
-  callbackEntries.forEach((entry) => {
-    if (entry.timer) {
-      clearTimeout(entry.timer);
-      entry.timer = null;
-    }
-  });
+  this.children.clear();
 };
 
 Script2DeviceLogic.prototype.logGetStateResult = function (poweredOn, requestPath, source, nonZeroExit) {
@@ -289,6 +289,7 @@ Script2DeviceLogic.prototype.logGetStateResult = function (poweredOn, requestPat
 };
 
 Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switchService) {
+  if (this.stopped) return;
   if (this.inFlightSet) {
     this.reconcileAfterSet = true;
     this.log.debug(
@@ -311,12 +312,13 @@ Script2DeviceLogic.prototype.pollStateAndUpdateCharacteristic = function (switch
     this.updateReachabilityFault(false);
     if (this.currentState !== poweredOn) {
       this.currentState = poweredOn;
-      switchService.updateCharacteristic(Characteristic.On, poweredOn);
+      this.presentState(poweredOn);
     }
   }, "polling");
 };
 
 Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
+  if (this.stopped) { onceCallback(this.log, callback)(new Error("Script2 device stopped.")); return; }
   const requestedState = !!powerOn;
   const callbackEntry = this.createSetCallbackEntry(requestedState, callback);
 
@@ -352,7 +354,7 @@ Script2DeviceLogic.prototype.setState = function (powerOn, callback) {
 };
 
 Script2DeviceLogic.prototype.createSetCallbackEntry = function (requestedState, callback) {
-  const entry = { callback, requestedState, settled: false, timer: null };
+  const entry = { callback: onceCallback(this.log, callback), requestedState, settled: false, timer: null };
 
   if (this.homekitSetAckTimeoutMs > 0) {
     entry.timer = setTimeout(() => {
@@ -410,7 +412,7 @@ Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
 
   const command = powerOn ? this.onCommand : this.offCommand;
   const action = powerOn ? "on" : "off";
-  this.log.debug(`Executing command: ${command}`);
+  this.log.debug(`${this.name}: executing configured command.`);
   let commandSettled = false;
   this.commandExecutor(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
     if (commandSettled) {
@@ -428,7 +430,7 @@ Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
       callbackError = new Error(errMessage);
     } else {
       const commandOutput = stdout.trim().toLowerCase();
-      this.log.debug(`Set State Command returned ${commandOutput}`);
+      this.log.debug(`${this.name}: set command completed.`);
 
       this.currentState = powerOn;
       if (this.resetStateCacheOnSet && this.stateCommand && !this.fileState) {
@@ -527,7 +529,7 @@ Script2DeviceLogic.prototype.finishSetStateReconciliation = function (setError, 
       this.switchService
     ) {
       this.currentState = poweredOn;
-      this.switchService.updateCharacteristic(Characteristic.On, poweredOn);
+      this.presentState(poweredOn);
     }
     this.resolveDeferredStateRequests(error, poweredOn, source, nonFatalError);
   }, "post-set-reconciliation", true);
@@ -538,6 +540,8 @@ Script2DeviceLogic.prototype.getState = function (
   requestPath = "homekit-get",
   bypassCache = false
 ) {
+  callback = onceCallback(this.log, callback);
+  if (this.stopped) { callback(new Error("Script2 device stopped.")); return; }
   this.log.debug(`Getting ${this.name} state...`);
 
   if (this.inFlightSet) {
@@ -605,7 +609,7 @@ Script2DeviceLogic.prototype.getState = function (
     };
     this.inFlightStateRequest = stateRequest;
     const command = this.stateCommand;
-    this.log.debug(`Executing command: ${command}`);
+    this.log.debug(`${this.name}: executing configured command.`);
     this.commandExecutor(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
       if (this.inFlightStateRequest === stateRequest) {
         this.inFlightStateRequest = null;
@@ -620,10 +624,10 @@ Script2DeviceLogic.prototype.getState = function (
 
       const pendingCallbacks = stateRequest.requests.map((request) => request.callback);
       const cleanCommandOutput = stdout.trim().toLowerCase();
-      this.log.debug(`Get State Command returned ${cleanCommandOutput}`);
+      this.log.debug(`${this.name}: state command returned output.`);
 
       if (stderr && stderr.trim().length > 0) {
-        this.log.warn(`Get State Command stderr: ${stderr.trim()}`);
+        this.log.warn(`${this.name}: state command wrote to stderr (output omitted).`);
       }
 
       if (!cleanCommandOutput) {
@@ -639,7 +643,7 @@ Script2DeviceLogic.prototype.getState = function (
 
       let nonFatalStateError = null;
       if (error) {
-        if (this.failOnStateExitCode) {
+        if (this.failOnStateExitCode || error.killed || error.signal || error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
           const diagnostics = this.formatCommandDiagnostics("state", command, error, stdout, stderr);
           const errMessage = `Get State command exited non-zero and fail_on_state_exit_code is enabled. ${diagnostics}`;
           this.log.error(errMessage);
@@ -668,45 +672,35 @@ Script2DeviceLogic.prototype.getState = function (
 };
 
 Script2DeviceLogic.prototype.setStatelessTrigger = function (powerOn, callback) {
-  const triggerOnOnAction = this.statelessTriggerOn !== "off";
-  const shouldTrigger = triggerOnOnAction ? powerOn : !powerOn;
-  const resetState = triggerOnOnAction ? false : true;
-
-  if (!shouldTrigger) {
-    callback(null, powerOn);
-    return;
-  }
-
-  const command = this.triggerCommand;
-  if (!command) {
-    callback(new Error("Missing required trigger command for stateless device."), null);
-    return;
-  }
-
-  this.log.debug(`Triggering ${this.name} stateless action...`);
-  this.log.debug(`Executing command: ${command}`);
-  this.commandExecutor(command, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
-    if (error || stderr) {
-      const diagnostics = this.formatCommandDiagnostics("trigger", command, error, stdout, stderr);
-      const errMessage = `Stateless trigger returned an error. ${diagnostics}`;
-      this.log.error(errMessage);
-      callback(new Error(errMessage), null);
-      return;
-    }
-
-    this.log.info(`Triggered ${this.name} stateless action`);
-    callback(null, shouldTrigger);
-
-    const resetDelay = Number.isFinite(this.autoResetMs) && this.autoResetMs >= 0 ? this.autoResetMs : 500;
-    setTimeout(() => {
-      if (this.switchService) {
-        this.switchService.updateCharacteristic(Characteristic.On, resetState);
-      }
-    }, resetDelay);
+  callback = onceCallback(this.log, callback);
+  if (this.stopped) { callback(new Error("Script2 device stopped.")); return; }
+  const resetState = this.statelessTriggerOn === "off";
+  if (!!powerOn === resetState) { callback(null, powerOn); return; }
+  this.triggerCallbacks.push(callback);
+  if (this.triggerInFlight) return;
+  this.triggerInFlight = true;
+  clearTimeout(this.resetTimer);
+  this.commandExecutor(this.triggerCommand, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
+    this.triggerInFlight = false;
+    const callbacks = this.triggerCallbacks.splice(0);
+    const failure = error || stderr ? new Error(this.formatCommandDiagnostics("trigger", this.triggerCommand, error)) : null;
+    if (failure) this.log.error(failure.message);
+    else this.log.info(`Triggered ${this.name} stateless action`);
+    for (const cb of callbacks) cb(failure, failure ? null : powerOn);
+    if (!this.stopped) this.resetTimer = setTimeout(() => {
+      this.resetTimer = null;
+      this.presentState(resetState);
+    }, this.autoResetMs);
   });
 };
 
-Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
+Script2DeviceLogic.prototype.presentState = function (state) {
+  if (this.stopped) return;
+  try { this.switchService?.updateCharacteristic(Characteristic.On, state); }
+  catch { this.log.error(`${this.name}: HomeKit state update failed.`); }
+};
+
+Script2DeviceLogic.prototype.bindServices = function (platformAccessory, startMonitoring = true) {
   const informationService =
     platformAccessory.getService(Service.AccessoryInformation) ||
     platformAccessory.addService(Service.AccessoryInformation);
@@ -730,7 +724,8 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
 
   if (this.deviceType === "stateless") {
     characteristic.on("set", this.setStatelessTrigger.bind(this));
-    characteristic.on("get", (callback) => callback(null, this.statelessTriggerOn === "off"));
+    characteristic.on("get", callback => onceCallback(this.log, callback)(this.stopped ? new Error("Script2 device stopped.") : null, this.statelessTriggerOn === "off"));
+    this.presentState(this.statelessTriggerOn === "off");
     return;
   }
 
@@ -740,43 +735,34 @@ Script2DeviceLogic.prototype.bindServices = function (platformAccessory) {
     characteristic.on("get", (callback) => this.getState(callback, "homekit-get"));
   }
 
+  if (startMonitoring) this.startMonitoring();
+};
+
+Script2DeviceLogic.prototype.startMonitoring = function () {
+  if (this.stopped || this.deviceType === "stateless") return;
+  this.stopMonitoring();
   if (this.fileState) {
-    const fileCreatedHandler = function (path) {
-      if (!this.currentState) {
-        this.log.debug(`File "${path}" was created`);
-        this.currentState = true;
-        switchService.setCharacteristic(Characteristic.On, true);
-      }
-    }.bind(this);
-
-    const fileRemovedHandler = function (path) {
-      if (this.currentState) {
-        this.log.debug(`File "${path}" was deleted`);
-        this.currentState = false;
-        switchService.setCharacteristic(Characteristic.On, false);
-      }
-    }.bind(this);
-
-    this.shutdown();
-    this.watcher = chokidar.watch(this.fileState, { alwaysStat: true });
-    this.watcher.on("add", fileCreatedHandler);
-    this.watcher.on("unlink", fileRemovedHandler);
-  }
-
-  if (!this.fileState && this.stateCommand && this.polling) {
-    if (!Number.isFinite(this.pollingInterval) || this.pollingInterval <= 0) {
-      this.log.warn(
-        `Invalid polling_interval '${this.pollingInterval}' for ${this.name}; using default 5000ms.`
-      );
-      this.pollingInterval = 5000;
+    const update = state => {
+      if (this.stopped) return;
+      if (this.inFlightSet) { this.reconcileAfterSet = true; return; }
+      this.currentState = state;
+      this.presentState(state);
+    };
+    try {
+      this.watcher = this.watchFactory(this.fileState, { alwaysStat: true });
+      this.watcher.on("error", () => this.log.error(`${this.name}: state-file watcher failed. Check the file path and permissions.`));
+      this.watcher.on("add", () => update(true));
+      this.watcher.on("unlink", () => update(false));
+      update(existsSync(this.fileState));
+    } catch {
+      this.stopMonitoring();
+      throw new Error("State-file watcher setup failed.");
     }
-
-    if (this.pollingOnStart) {
-      this.pollStateAndUpdateCharacteristic(switchService);
-    }
-
+  } else if (this.stateCommand && this.polling) {
+    if (this.pollingOnStart) this.pollStateAndUpdateCharacteristic(this.switchService);
     this.pollTimer = setInterval(() => {
-      this.pollStateAndUpdateCharacteristic(switchService);
+      try { this.pollStateAndUpdateCharacteristic(this.switchService); }
+      catch { this.log.error(`${this.name}: polling failed.`); }
     }, this.pollingInterval);
   }
 };
@@ -790,24 +776,5 @@ Script2DeviceLogic.prototype.updateReachabilityFault = function (hasFault) {
   void hasFault;
 };
 
-Script2DeviceLogic.prototype.buildServices = function () {
-  const informationService = new Service.AccessoryInformation();
-  const switchService = new Service.Switch(this.name);
-  const platformAccessory = {
-    getService: (svcType) => {
-      if (svcType === Service.AccessoryInformation) {
-        return informationService;
-      }
-      if (svcType === Service.Switch) {
-        return switchService;
-      }
-      return null;
-    },
-    addService: () => null,
-  };
-
-  this.bindServices(platformAccessory);
-  return [informationService, switchService];
-};
-
 module.exports.Script2DeviceLogic = Script2DeviceLogic;
+module.exports.Script2Platform = Script2Platform;
