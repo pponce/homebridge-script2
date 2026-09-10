@@ -77,8 +77,8 @@ test('an ordinary nonzero state exit remains configurable', () => {
 test('file notifications update presentation without any ON/OFF command', () => {
   apiHarness();const {logic,calls}=harness({fileState:'/tmp/script2-test-nonexistent',state:undefined});const watcher=new EventEmitter();let closed=0;watcher.close=async()=>closed++;
   logic.watchFactory=()=>watcher;const updates=[];logic.switchService={updateCharacteristic:(c,v)=>updates.push(v)};
-  logic.startMonitoring();watcher.emit('add');watcher.emit('unlink');assert.doesNotThrow(()=>watcher.emit('error',new Error('watch error')));
-  assert.deepEqual(updates.slice(-2),[true,false]);assert.equal(calls.length,0);logic.shutdown();assert.equal(closed,1);watcher.emit('add');assert.equal(updates.at(-1),false);
+  logic.startMonitoring();watcher.emit('add',logic.fileState);watcher.emit('unlink',logic.fileState);assert.doesNotThrow(()=>watcher.emit('error',new Error('watch error')));
+  assert.deepEqual(updates.slice(-2),[true,false]);assert.equal(calls.length,0);logic.shutdown();assert.equal(closed,1);watcher.emit('add',logic.fileState);assert.equal(updates.at(-1),false);
 });
 test('shutdown resolves pending GET/SET and never starts a queued command', () => {
   const {logic,calls}=harness();let results=[];

@@ -3,6 +3,7 @@ let Characteristic;
 
 const exec = require("child_process").exec;
 const { existsSync } = require("fs");
+const { dirname, resolve } = require("node:path");
 const { validate } = require("./homebridge-ui/public/validation");
 const { safeLogger, onceCallback } = require("./lib/safety");
 
@@ -749,10 +750,13 @@ Script2DeviceLogic.prototype.startMonitoring = function () {
       this.presentState(state);
     };
     try {
-      this.watcher = this.watchFactory(this.fileState, { alwaysStat: true });
+      // Watching the parent also detects a flag that does not exist at startup.
+      const parent = dirname(this.fileState);
+      if (!existsSync(parent)) throw new Error("State-file parent directory does not exist.");
+      this.watcher = this.watchFactory(parent, { alwaysStat: true, depth: 0 });
       this.watcher.on("error", () => this.log.error(`${this.name}: state-file watcher failed. Check the file path and permissions.`));
-      this.watcher.on("add", () => update(true));
-      this.watcher.on("unlink", () => update(false));
+      this.watcher.on("add", path => { if (resolve(path) === resolve(this.fileState)) update(true); });
+      this.watcher.on("unlink", path => { if (resolve(path) === resolve(this.fileState)) update(false); });
       update(existsSync(this.fileState));
     } catch {
       this.stopMonitoring();

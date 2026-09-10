@@ -34,7 +34,7 @@ Successful ON/OFF and trigger command completions are logged at info level. Rout
 
 Timeouts, terminated state commands and output overflow are failures even if partial output was printed. Ordinary nonzero state exits still honor `fail_on_state_exit_code`. ON/OFF and trigger commands retain their stderr-as-failure policy. Concurrent stateless activations share one execution; later intentional activations are allowed. The reset delay begins when the command settles, and resetting the tile never sends another command. Shutdown rejects pending work, stops tracked processes/watchers/timers, and ignores late completions. Arbitrary scripts can spawn detached descendants; stopping the immediate process cannot guarantee those descendants stop.
 
-Plugin state caching is in memory and Homebridge manages accessory persistence. Script2 reads/watches user-selected state files; it does not create them. Any plugin-owned files must be inside Homebridge's actual storage directory. Adjust example script/log paths to your installation.
+Plugin state caching is in memory and Homebridge manages accessory persistence. Script2 reads/watches user-selected state files; it does not create them. The state file may be absent at startup, but its parent directory must already exist. Any plugin-owned files must be inside Homebridge's actual storage directory. Adjust example script/log paths to your installation.
 
 [Changelog](CHANGELOG.md) · [Full beta release notes](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/releases/v1.0.0-beta.1.md)
 

@@ -9,6 +9,7 @@ jobs:
   package:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node: [22, 24]
         homebridge: ['^1.8.0', '^2.0.0']
@@ -19,7 +20,13 @@ jobs:
           node-version: '${{ matrix.node }}'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run check && npm test && npm run test:installed && npm run check:package
+      - run: npm run check
+      - run: npm test
+      - name: Installed watcher
+        run: node --test --test-name-pattern="installed chokidar" test/installed.cjs
+      - name: Installed UI IPC
+        run: node --test --test-name-pattern="packaged custom UI" test/installed.cjs
+      - run: npm run check:package
       - name: Install exact package with supported Homebridge
         env:
           SCRIPT2_HB_VERSION: '${{ matrix.homebridge }}'
