@@ -2,7 +2,9 @@
 
 ## 1.0.0-beta.1
 
-**BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING. This beta removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/MIGRATION.md). Legacy configurations will no longer run.**
+# ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
+
+**This beta removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/MIGRATION.md). Legacy configurations will no longer run.**
 
 - Platform-only configuration using on_off_switches and stateless_switches; old registration and configuration aliases removed.
 - Modern custom settings UI with complete advanced options, validation, and serialized saving.
