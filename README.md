@@ -1,18 +1,20 @@
-<p align="center"><img src="https://raw.githubusercontent.com/pponce/homebridge-script2/certification-v1-beta/assets/homebridge-script2-icon-512.png" width="128" alt="Script2 terminal and home icon"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/pponce/homebridge-script2/master/assets/homebridge-script2-icon-512.png" width="128" alt="Script2 terminal and home icon"></p>
 
 # homebridge-script2
 
 Execute custom scripts via HomeKit / Apple Home using Homebridge.
 
-**BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING. This beta removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/MIGRATION.md). Legacy configurations will no longer run.**
+# ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
 
-**Beta release:** choose **1.0.0-beta.1** / **beta** explicitly. Stable `latest` remains on the prior release. This project is preparing for verification; it is not yet certified.
+**Version 1.0.0 removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
 
-## Install the beta
+**Stable release: 1.0.0.** Install the `latest` channel. Homebridge verification is pending; this release does not claim certification.
+
+## Install or update
 
 1. Save a Homebridge backup and your full config.json.
 2. Follow [Migration](#migration) if you use an older configuration.
-3. In Homebridge UI, install Script2 and select **1.0.0-beta.1** using the plugin version selector.
+3. In Homebridge UI, install Script2 and select **1.0.0** / **latest** using the plugin version selector.
 4. Open Settings, add On/Off or Stateless switches, choose a state source, and review Advanced settings. Opening or saving settings never runs commands.
 5. Use Homebridge Save, then restart the instance or child bridge running Script2.
 
@@ -26,7 +28,7 @@ Existing canonical entries do not need a list-format change. Keep names and seri
 
 ## What distinguishes Script2
 
-Script2 combines command- or file-based state with per-switch command serialization, coalesced reads, an adjustable TTL cache, and separate command-execution and HomeKit-acknowledgement deadlines. A late failure after early acknowledgement bypasses the cache and reconciles HomeKit from the state source. Stateless switches can trigger on either On or Off and reset without sending a second command. See [feature comparison and suggested verification text](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/VERIFICATION.md). These are useful combined behaviors; no claim is made that every individual option is exclusive to Script2.
+Script2 combines command- or file-based state with per-switch command serialization, coalesced reads, an adjustable TTL cache, and separate command-execution and HomeKit-acknowledgement deadlines. A late failure after early acknowledgement bypasses the cache and reconciles HomeKit from the state source. Stateless switches can trigger on either On or Off and reset without sending a second command. See [feature comparison and suggested verification text](https://github.com/pponce/homebridge-script2/blob/master/VERIFICATION.md). These are useful combined behaviors; no claim is made that every individual option is exclusive to Script2.
 
 ## Logging and behavior notes
 
@@ -36,7 +38,7 @@ Timeouts, terminated state commands and output overflow are failures even if par
 
 Plugin state caching is in memory and Homebridge manages accessory persistence. Script2 reads/watches user-selected state files; it does not create them. The state file may be absent at startup, but its parent directory must already exist. Any plugin-owned files must be inside Homebridge's actual storage directory. Adjust example script/log paths to your installation.
 
-[Changelog](CHANGELOG.md) · [Full beta release notes](https://github.com/pponce/homebridge-script2/blob/certification-v1-beta/releases/v1.0.0-beta.1.md)
+[Changelog](CHANGELOG.md) · [1.0.0 release notes](https://github.com/pponce/homebridge-script2/releases/tag/v1.0.0)
 
 Core of the code written by [@xxcombat](https://github.com/xxcombat/). Original plugin: [homebridge-script](https://github.com/xxcombat/homebridge-script).
 
@@ -162,7 +164,7 @@ For existing synchronous behavior, omit `homekit_set_ack_timeout_ms` or set it t
 (Requires Node.js 22.13+ within Node 22, or Node 24.)
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install this beta using the Homebridge UI version selector: **1.0.0-beta.1**
+2. Install **1.0.0** / **latest** using the Homebridge UI version selector
 3. Update your configuration file.
 4. Ensure scripts are executable and accessible by the Homebridge service user.
 
@@ -310,4 +312,3 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 - Add logging and fail-fast flags (`set -euo pipefail`) in shell scripts.
 - Keep scripts minimal; move complex logic to separate files you can test independently.
 - Restart Homebridge after major script/permission changes to ensure a clean environment.
-

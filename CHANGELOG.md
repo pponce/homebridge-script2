@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.0 — 2026-09-11
+
+# ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
+
+**Version 1.0.0 removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
+
+- Promote the 1.0.0-beta.1 implementation to the stable `latest` channel. Existing beta users do not need another configuration migration.
+- Use the modern platform-only settings editor with complete advanced controls and validation.
+- Include the beta's command, callback, watcher, shutdown, and stateless reliability fixes.
+- Preserve command serialization, shared reads, caching, and optional early HomeKit acknowledgement with late-failure reconciliation.
+- Display the large migration warning in both release notes and the changelog in Homebridge.
+- Include certification icons and the migration guide. Homebridge verification remains pending.
+
+[Full 1.0.0 release notes](releases/v1.0.0.md)
+
 ## 1.0.0-beta.1
 
 # ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**

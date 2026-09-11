@@ -4,7 +4,7 @@
   "customUi": true,
   "customUiPath": "homebridge-ui",
   "singular": true,
-  "headerDisplay": "## Script2 1.0 beta\n**Back up config.json before upgrading. Legacy configurations no longer run. See README Migration.**",
+  "headerDisplay": "## Script2 1.0\n**Back up config.json before upgrading. Legacy configurations no longer run. See README Migration.**",
   "schema": {
     "type": "object",
     "properties": {

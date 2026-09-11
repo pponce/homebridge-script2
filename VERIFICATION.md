@@ -1,6 +1,6 @@
 # Homebridge verification: Script2
 
-Prepared for 1.0.0-beta.1 on September 10, 2026. Verification is performed by the Homebridge team; a beta release is not certification.
+Prepared for 1.0.0 on September 11, 2026. Verification is performed by the Homebridge team; publication of this stable release is not certification.
 
 ## Suggested submission text
 
@@ -44,8 +44,8 @@ The current [verified registry](https://github.com/homebridge/plugins/blob/lates
 - No system-modifying postinstall and no interactive plugin setup; custom UI uses the official helper package.
 - Automated tests cover configuration rejection, registration/identity, command errors, callbacks, watcher events, timeouts, shutdown, and existing long-running behavior. Browser tests cover saving and migration warnings. Installed-package tests exercise the actual watcher and UI IPC.
 - CI is configured for Node 22 and 24 with Homebridge 1 and 2. Confirm the CI results for the exact commit before publishing; source review alone is not an installation result.
-- Before a stable release, complete a live Homebridge beta trial: old platform migration, standalone migration if relevant, scene/automation checks, file state, long-running actions, late failure, and Homebridge's update/changelog display. The GitHub Markdown preview shows the intended release text; it does not prove every Homebridge UI version renders it identically.
+- The maintainer should verify these behaviors on their own installation: old platform migration, standalone migration if relevant, scene/automation checks, file state, long-running actions, late failure, and Homebridge's update/changelog display. The GitHub Markdown preview shows the intended release text; it does not prove every Homebridge UI version renders it identically.
 
-## Submit after beta validation
+## Submit after publishing 1.0.0
 
 Use the [official request](https://github.com/homebridge/plugins/issues/new?template=1_verification-request.yml). Enter npm package `homebridge-script2` and repository `https://github.com/pponce/homebridge-script2`. Attach [the 100 × 100 PNG](assets/homebridge-script2-icon.png). Add your actual tested Homebridge/Node versions and migration results to the text above. Do not add a verified badge until approval.

@@ -4,12 +4,15 @@ from pathlib import Path
 import pty
 import select
 import subprocess
+import sys
 
-subprocess.run(
-    ["bash", "-n", "scripts/publish-beta.sh", "scripts/update-and-publish-beta.txt"],
-    check=True,
-)
-source = Path("scripts/publish-beta.sh").read_text()
+for script in ["scripts/publish-beta.sh", "scripts/update-and-publish-beta.txt",
+               "scripts/publish-stable.sh", "scripts/update-and-publish-stable.txt"]:
+    subprocess.run(["bash", "-n", script], check=True)
+channel = sys.argv[1] if len(sys.argv) > 1 else "beta"
+assert channel in ("beta", "stable")
+tag = "beta" if channel == "beta" else "latest"
+source = Path(f"scripts/publish-{channel}.sh").read_text()
 helper = next(line for line in source.splitlines() if line.startswith("script2_interactive()"))
 publish = next(line for line in source.splitlines() if line.startswith("script2_interactive npm publish"))
 program = """bash <<'PROBE'
@@ -17,12 +20,13 @@ set -e
 node -e 'if(process.stdin.isTTY)throw Error("Expected heredoc stdin"); console.log("Reproduced: heredoc stdin is not a terminal")'
 """ + helper + """
 npm() {
-  node -e 'if(!process.stdin.isTTY || !process.stdout.isTTY)throw Error("TTY missing"); const a=process.argv.slice(1); for(const v of ["publish","--auth-type=web","--browser=false","beta"])if(!a.includes(v))throw Error(v); console.log("PASS: publish receives terminal stdin/stdout and browser options")' -- "$@"
+  node -e 'if(!process.stdin.isTTY || !process.stdout.isTTY)throw Error("TTY missing"); const a=process.argv.slice(1); for(const v of ["publish","--auth-type=web","--browser=false","__TAG__"])if(!a.includes(v))throw Error(v); console.log("PASS: publish receives terminal stdin/stdout and browser options")' -- "$@"
 }
 script2_archive=probe.tgz
 script2_registry=https://registry.npmjs.org/
 """ + publish + "\nPROBE\n"
 
+program = program.replace("__TAG__", tag)
 pid, fd = pty.fork()
 if pid == 0:
     os.execvp("bash", ["bash", "-c", program])

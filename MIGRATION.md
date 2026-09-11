@@ -2,7 +2,7 @@
 
 **BACK UP BEFORE UPDATING. Save your full Homebridge config.json and download a Homebridge backup. This release removes standalone Script2 accessories and old platform formats. Legacy configurations will no longer run.**
 
-You can move to the current lists while still using 0.4.6, test them, and then install the beta. Record rooms, scenes, and automations before making changes. Stop the relevant Homebridge instance while manually editing config.json; preserve every unrelated setting.
+You can move to the current lists while still using 0.4.6, test them, and then install 1.0.0. Record rooms, scenes, and automations before making changes. Stop the relevant Homebridge instance while manually editing config.json; preserve every unrelated setting.
 
 ## Already using the current lists?
 
@@ -85,7 +85,7 @@ After — merge this with your existing arrays rather than overwriting them:
 }
 ```
 
-Remove only the old entries whose `accessory` is `Script2`. Preserve other accessories and platforms. If a Script2 platform already exists, merge into it rather than creating another block. Omit the per-accessory `accessory` key in the new lists. Convert stateless entries using the table above. Homebridge may report the old accessory type as unregistered if you install the beta before removing old entries.
+Remove only the old entries whose `accessory` is `Script2`. Preserve other accessories and platforms. If a Script2 platform already exists, merge into it rather than creating another block. Omit the per-accessory `accessory` key in the new lists. Convert stateless entries using the table above. Homebridge may report the old accessory type as unregistered if you install 1.0.0 before removing old entries.
 
 ## Validation and timing changes
 
@@ -97,8 +97,8 @@ Remove only the old entries whose `accessory` is `Script2`. Preserve other acces
 - Name-only or wrongly typed entries are rejected before scripts start. A recognized legacy key blocks the platform with an actionable message; saved configuration is never silently rewritten.
 - If both state sources were saved, `fileState` retains precedence. The new UI makes source selection explicit.
 
-## Beta verification and rollback
+## Verify the migration and roll back if needed
 
-Choose **1.0.0-beta.1** / **beta** in Homebridge UI and restart the relevant instance. Check manual actions, polling/state reads, file creation/removal, stateless reset, and scenes/automations. If you use early acknowledgement, test a long-running success and a late failure against your real state source.
+Choose **1.0.0** / **latest** in Homebridge UI and restart the relevant instance. Check manual actions, polling/state reads, file creation/removal, stateless reset, and scenes/automations. If you use early acknowledgement, test a long-running success and a late failure against your real state source.
 
 For rollback, select **0.4.6** and restore the configuration backed up for it. Restart and verify. Restoring package/config does not necessarily repair HomeKit assignments after identity changes. Keep the full Homebridge backup available; do not delete the entire accessory cache as a migration shortcut.
