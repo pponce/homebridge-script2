@@ -1,4 +1,6 @@
-<p align="center"><img src="https://raw.githubusercontent.com/pponce/homebridge-script2/master/assets/homebridge-script2-icon-512.png" width="128" alt="Script2 terminal and home icon"></p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/pponce/homebridge-script2/master/assets/homebridge-script2-icon-512.png" width="128" height="128" alt="Script2 terminal and home icon">
+</p>
 
 # homebridge-script2
 
@@ -41,8 +43,6 @@ Timeouts, terminated state commands and output overflow are failures even if par
 Plugin state caching is in memory and Homebridge manages accessory persistence. Script2 reads/watches user-selected state files; it does not create them. The state file may be absent at startup, but its parent directory must already exist. Any plugin-owned files must be inside Homebridge's actual storage directory. Adjust example script/log paths to your installation.
 
 [Changelog](CHANGELOG.md) · [1.0.1 release notes](https://github.com/pponce/homebridge-script2/releases/tag/v1.0.1)
-
-Core of the code written by [@xxcombat](https://github.com/xxcombat/). Original plugin: [homebridge-script](https://github.com/xxcombat/homebridge-script).
 
 ## Platform configuration parameters
 
@@ -314,3 +314,7 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 - Add logging and fail-fast flags (`set -euo pipefail`) in shell scripts.
 - Keep scripts minimal; move complex logic to separate files you can test independently.
 - Restart Homebridge after major script/permission changes to ensure a clean environment.
+
+---
+
+Originally based on [homebridge-script](https://github.com/xxcombat/homebridge-script).
