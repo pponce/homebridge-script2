@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.2 — 2026-09-11
+
+# ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
+
+**For users upgrading from versions before 1.0.0: legacy Script2 accessory mode and old platform configuration formats are no longer supported. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
+
+**No configuration changes are required when upgrading from 1.0.0, 1.0.1, or 1.0.0-beta.1.**
+
+- Update the development-only fast-uri lockfile entry from 3.0.1 to 3.1.7 through Dependabot PR [#123](https://github.com/pponce/homebridge-script2/pull/123), incorporating upstream security fixes.
+- Keep the 1.0.1 schema fix and README improvements. Runtime behavior and dependencies are unchanged.
+
+[Full 1.0.2 release notes](releases/v1.0.2.md)
+
 ## 1.0.1 — 2026-09-11
 
 # ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**

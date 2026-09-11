@@ -10,9 +10,9 @@ Run your own scripts from Apple Home and Siri using Homebridge.
 
 **Version 1.0.0 removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
 
-**Stable release: 1.0.1.** Install the `latest` channel. Homebridge verification is pending; this release does not claim certification.
+**Stable release: 1.0.2.** Install the `latest` channel. Homebridge verification is pending; this release does not claim certification.
 
-**Updating from 1.0.0?** Version 1.0.1 fixes configuration-schema metadata and requires no configuration changes.
+**Updating from 1.0.0 or 1.0.1?** Version 1.0.2 includes the schema fix and development dependency maintenance. No configuration changes are required.
 
 [Quick start](#quick-start) · [Migration](#migration) · [Minimal configuration](#minimal-configuration) · [Settings reference](#settings-reference) · [Full example](#full-configuration-example) · [Advanced behavior](#advanced-behavior) · [FAQ](#troubleshooting-faq) · [Changelog](CHANGELOG.md)
 
@@ -30,7 +30,7 @@ See [advanced behavior](#advanced-behavior) for execution details and [the featu
 
 1. Save a Homebridge backup and your full config.json.
 2. Follow [Migration](#migration) if you use an older configuration.
-3. In Homebridge UI, install Script2 and select **1.0.1** / **latest** using the plugin version selector.
+3. In Homebridge UI, install Script2 and select **1.0.2** / **latest** using the plugin version selector.
 4. For a new setup, open Settings and add an **On/Off switch** or a **Stateless switch**. Enter your commands; On/Off switches also need a state command or state file. For an existing valid setup, keep your current entries.
 5. Review Advanced settings if needed, use Homebridge Save, then restart the instance or child bridge running Script2. Opening or saving settings never runs commands.
 
