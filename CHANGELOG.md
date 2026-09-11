@@ -1,9 +1,26 @@
 # Changelog
 
-## Unreleased
+## 1.0.3 — 2026-09-11
 
-- Fix Homebridge night-mode contrast for custom settings text, fields, help, tables, and buttons. Follow Homebridge's selected theme even when the operating system uses a different appearance.
-- Add browser checks for light/night theme switching, text and field-border contrast, and mobile layout.
+# ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
+
+**For users upgrading from versions before 1.0.0: legacy Script2 accessory mode and old platform configuration formats are no longer supported. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
+
+**Already using a stable 1.0.x release or 1.0.0-beta.1? No configuration changes or additional migration are required.**
+
+## Night-theme visibility
+
+- Fix custom settings text, fields, help, tables, buttons, and borders in Homebridge night mode.
+- Follow Homebridge's selected theme even when the operating system uses a different appearance.
+- Add browser checks for theme switching, contrast, and mobile layout.
+
+Configuration and device-control behavior are unchanged.
+
+## Update
+
+Select **1.0.3** / **latest** in Homebridge UI and restart the instance or child bridge running Script2.
+
+[Full 1.0.3 release notes](releases/v1.0.3.md)
 
 ## 1.0.2 — 2026-09-11
 
