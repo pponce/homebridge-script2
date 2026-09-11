@@ -38,3 +38,12 @@ test('rapid edits during validation persist newest snapshot and preserve metadat
 test('stateless trigger-on-Off and zero reset work on mobile without overflow',async()=>{
   const page=await pageWith([]);await page.setViewportSize({width:375,height:850});await page.getByRole('button',{name:'Add Stateless Switch',exact:true}).click();await page.getByLabel('Switch name',{exact:true}).fill('Reboot');await page.getByLabel('Trigger command',{exact:true}).fill('/opt/reboot');await page.getByLabel('Run command when',{exact:true}).selectOption('off');await page.getByLabel('Reset delay (seconds)',{exact:true}).fill('0');await page.waitForFunction(()=>window._hb.enabled);const saved=await page.evaluate(()=>window._hb.saved[0].stateless_switches[0]);assert.equal(saved.auto_reset_ms,0);assert.equal(saved.stateless_trigger_on,'off');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:path.join(__dirname,'../.test-artifacts/settings-mobile.png'),fullPage:true});await page.close();
 });
+
+test('Homebridge night and light themes keep settings and form controls readable', async t => {
+  const page = await pageWith([]);
+  t.after(() => page.close());
+  await page.getByRole('button', { name: 'Add On/Off Switch', exact: true }).click();
+  await page.getByText('Advanced timing and behavior', { exact: true }).click();
+  fs.mkdirSync(path.join(__dirname, '../.test-artifacts'), { recursive: true });
+  await require('./theme-fixture.cjs').checkThemeContrast(page, '.script2-settings', path.join(__dirname, '../.test-artifacts/settings'));
+});
