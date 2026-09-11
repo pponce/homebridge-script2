@@ -12,7 +12,7 @@
 - Preserve the optional platform display name and all existing switch requirements.
 - Add JSON Schema validation and regression tests for existing configurations and the reported schema error. The validator is a development dependency only.
 - Keep the large pre-1.0 migration warning in release notes and changelog.
-- Show the asset icon above the README title and move the original-plugin reference to the bottom.
+- Reorganize the README into one quick start, linked sections, a minimal example, a settings reference with timing units, and advanced behavior notes. Preserve the FAQ, top icon, and original-plugin reference at the bottom.
 
 [Full 1.0.1 release notes](releases/v1.0.1.md)
 

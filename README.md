@@ -4,7 +4,7 @@
 
 # homebridge-script2
 
-Execute custom scripts via HomeKit / Apple Home using Homebridge.
+Run your own scripts from Apple Home and Siri using Homebridge.
 
 # ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
 
@@ -14,15 +14,29 @@ Execute custom scripts via HomeKit / Apple Home using Homebridge.
 
 **Updating from 1.0.0?** Version 1.0.1 fixes configuration-schema metadata and requires no configuration changes.
 
-## Install or update
+[Quick start](#quick-start) · [Migration](#migration) · [Minimal configuration](#minimal-configuration) · [Settings reference](#settings-reference) · [Full example](#full-configuration-example) · [Advanced behavior](#advanced-behavior) · [FAQ](#troubleshooting-faq) · [Changelog](CHANGELOG.md)
+
+## What Script2 does
+
+- Run separate ON and OFF commands, and report device state from a command or a file.
+- Run one-shot actions with a stateless switch that resets its display automatically.
+- Adjust polling, caching, and timeouts to suit your scripts, including long-running actions.
+- Handle repeated HomeKit requests and command failures without unnecessarily launching the same action again.
+
+See [advanced behavior](#advanced-behavior) for execution details and [the feature comparison](VERIFICATION.md) for the Homebridge review rationale.
+
+
+## Quick start
 
 1. Save a Homebridge backup and your full config.json.
 2. Follow [Migration](#migration) if you use an older configuration.
 3. In Homebridge UI, install Script2 and select **1.0.1** / **latest** using the plugin version selector.
-4. Open Settings, add On/Off or Stateless switches, choose a state source, and review Advanced settings. Opening or saving settings never runs commands.
-5. Use Homebridge Save, then restart the instance or child bridge running Script2.
+4. For a new setup, open Settings and add an **On/Off switch** or a **Stateless switch**. Enter your commands; On/Off switches also need a state command or state file. For an existing valid setup, keep your current entries.
+5. Review Advanced settings if needed, use Homebridge Save, then restart the instance or child bridge running Script2. Opening or saving settings never runs commands.
 
 Requires Node **22.13+ within Node 22, or Node 24**, and Homebridge **1.8+ within v1, or v2**. Commands run as the Homebridge service user and must not require a terminal or prompts.
+
+Make scripts executable and use absolute paths accessible to the Homebridge service user. If a command works in your terminal but fails in Homebridge, start with the [FAQ](#troubleshooting-faq).
 
 ## Migration
 
@@ -30,28 +44,53 @@ Requires Node **22.13+ within Node 22, or Node 24**, and Homebridge **1.8+ withi
 
 Existing canonical entries do not need a list-format change. Keep names and serial values unchanged, remove any legacy `device_type`, and correct values rejected by validation. The editor never silently converts old configuration.
 
-## What distinguishes Script2
+## Minimal configuration
 
-Script2 combines command- or file-based state with per-switch command serialization, coalesced reads, an adjustable TTL cache, and separate command-execution and HomeKit-acknowledgement deadlines. A late failure after early acknowledgement bypasses the cache and reconciles HomeKit from the state source. Stateless switches can trigger on either On or Off and reset without sending a second command. See [feature comparison and suggested verification text](https://github.com/pponce/homebridge-script2/blob/master/VERIFICATION.md). These are useful combined behaviors; no claim is made that every individual option is exclusive to Script2.
+The settings UI builds this configuration for you. If you edit JSON manually, add the following **single platform object inside your existing `platforms` array**. Preserve other platforms and Homebridge settings. If Script2 is already configured, edit that entry instead of adding another.
 
-## Logging and behavior notes
+```json
+{
+  "platform": "Script2Platform",
+  "on_off_switches": [
+    {
+      "name": "Desk Lamp",
+      "on": "/var/lib/homebridge/scripts/lamp-on.sh",
+      "off": "/var/lib/homebridge/scripts/lamp-off.sh",
+      "state": "/var/lib/homebridge/scripts/lamp-state.sh"
+    }
+  ]
+}
+```
 
-Successful ON/OFF and trigger command completions are logged at info level. Routine successful reads, polling, and cache/coalescing information are debug-only. Errors identify the accessory and action; raw command strings/stdout/stderr are omitted because scripts may contain credentials. An acknowledged request is not necessarily a completed action.
+Create or supply those scripts and replace the example paths with their actual absolute paths. The state script should print `true` when the lamp is on and `false` when it is off. The platform display name is optional; the switch name is required.
 
-Timeouts, terminated state commands and output overflow are failures even if partial output was printed. Ordinary nonzero state exits still honor `fail_on_state_exit_code`. ON/OFF and trigger commands retain their stderr-as-failure policy. Concurrent stateless activations share one execution; later intentional activations are allowed. The reset delay begins when the command settles, and resetting the tile never sends another command. Shutdown rejects pending work, stops tracked processes/watchers/timers, and ignores late completions. Arbitrary scripts can spawn detached descendants; stopping the immediate process cannot guarantee those descendants stop.
+For periodic updates when the device changes outside Apple Home, enable **Polling** in Settings. For a one-shot action, use a stateless switch with a `trigger` command instead. See the [settings reference](#settings-reference) and [full example](#full-configuration-example).
 
-Plugin state caching is in memory and Homebridge manages accessory persistence. Script2 reads/watches user-selected state files; it does not create them. The state file may be absent at startup, but its parent directory must already exist. Any plugin-owned files must be inside Homebridge's actual storage directory. Adjust example script/log paths to your installation.
 
-[Changelog](CHANGELOG.md) · [1.0.1 release notes](https://github.com/pponce/homebridge-script2/releases/tag/v1.0.1)
-
-## Platform configuration parameters
+## Settings reference
 
 | Name | Value | Required | Notes |
 | --- | --- | --- | --- |
+| `platform` | `"Script2Platform"` | yes | Platform identifier; keep this exact value |
+| `name` | string | no | Optional platform display name; individual switches still require names |
 | `on_off_switches` | array | no | Main section for standard ON/OFF switches |
 | `stateless_switches` | array | no | Main section for one-shot trigger switches |
 
-### `on_off_switches` item parameters
+### Timing units
+
+**The settings UI shows seconds. Values in config.json are milliseconds.** Multiply seconds by 1,000 when editing JSON manually. The defaults below apply when a setting is omitted.
+
+| JSON setting | UI value in seconds | JSON value in milliseconds |
+| --- | --- | --- |
+| `command_timeout` | 10 | 10000 |
+| `homekit_set_ack_timeout_ms` | 0 | 0 |
+| `polling_interval` | 5 | 5000 |
+| `state_cache_ttl_ms` | 1 | 1000 |
+| `auto_reset_ms` | 0.5 | 500 |
+
+An acknowledgement delay of `0` waits for the action command to finish. A cache lifetime of `0` disables stored-state caching. A reset delay of `0` resets the stateless switch immediately after its command settles.
+
+### On/Off switches
 
 Name | Value | Required | Notes
 --- | --- | --- | ---
@@ -71,7 +110,7 @@ Name | Value | Required | Notes
 `homekit_set_ack_timeout_ms` | integer ms | no (default `0`) | Opt in to acknowledging a still-running ON/OFF request after this delay; requires `state` or `fileState`
 `unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
 
-### `stateless_switches` item parameters
+### Stateless switches
 
 Name | Value | Required | Notes
 --- | --- | --- | ---
@@ -82,93 +121,110 @@ Name | Value | Required | Notes
 `stateless_trigger_on` | `on/off` | no (default `on`) | `on` triggers on ON; `off` triggers on OFF (tile defaults to ON)
 `unique_serial` | _(custom)_ | no | Unique serial per accessory is recommended
 
-### Command timing and long-running ON/OFF actions
+## Full configuration example
 
-`command_timeout` and `homekit_set_ack_timeout_ms` control different deadlines:
-
-- `command_timeout` controls how long Script2 allows the external ON, OFF, state, or stateless trigger command to run. A command that exceeds this limit is reported as timed out. Increase it above the command's worst-case runtime for long-running scripts.
-- `homekit_set_ack_timeout_ms` applies only to stateful ON/OFF switches. Its backward-compatible default is `0`, which means the HomeKit set callback waits for actual command completion.
-- Set `homekit_set_ack_timeout_ms` to a positive integer to opt into early HomeKit acknowledgement. For example, `5000` acknowledges the request after five seconds while the external command continues under `command_timeout`.
-- Early acknowledgement does not complete or duplicate the external operation: Script2 keeps the command in flight, coalesces duplicate requests, serializes opposite requests, and defers GET/poll presentation updates until the command settles.
-- Optimistic acknowledgement requires `state` or `fileState`. If the external command later fails, Script2 bypasses the TTL cache and uses that state source to reconcile HomeKit. Without a state source, early acknowledgement is disabled with a warning.
-- `fail_on_state_exit_code` is independent of both timeout settings. It controls whether a non-zero **state command** exit is fatal when the state command still prints usable stdout.
-
-Recommended settings for a stateful command that may take up to two minutes:
+This example combines command-based state, file-based state, a long-running action, and both stateless trigger directions. It is **one platform entry** for your existing `platforms` array. Replace the paths and names with your own; merge into an existing Script2 platform rather than adding a second one. All timings here are in milliseconds.
 
 ```json
-"command_timeout": 120000,
-"homekit_set_ack_timeout_ms": 5000
+{
+  "platform": "Script2Platform",
+  "name": "Script2",
+  "on_off_switches": [
+    {
+      "name": "Outlet 1",
+      "on": "/opt/scripts/on.sh 1",
+      "off": "/opt/scripts/off.sh 1",
+      "state": "/opt/scripts/state.sh 1",
+      "on_value": "true",
+      "command_timeout": 120000,
+      "homekit_set_ack_timeout_ms": 5000
+    },
+    {
+      "name": "Outlet 2",
+      "on": "/opt/scripts/on.sh 2",
+      "off": "/opt/scripts/off.sh 2",
+      "fileState": "/opt/scripts/outlet2.flag",
+      "polling": false
+    }
+  ],
+  "stateless_switches": [
+    {
+      "name": "Outlet 1 Reboot",
+      "trigger": "/opt/scripts/reboot.sh 1",
+      "auto_reset_ms": 500,
+      "command_timeout": 30000,
+      "stateless_trigger_on": "off"
+    },
+    {
+      "name": "Outlet 2 Reboot",
+      "trigger": "/opt/scripts/reboot.sh 2",
+      "auto_reset_ms": 700,
+      "stateless_trigger_on": "on"
+    }
+  ]
+}
 ```
 
-For existing synchronous behavior, omit `homekit_set_ack_timeout_ms` or set it to `0`.
+In this example, Outlet 1 allows its action command to run for 120 seconds and acknowledges HomeKit after 5 seconds if it is still running. The file-state switch reads the flag instead of running a state command. The reboot switches reset their display after their command settles.
 
-### State script behavior for on_off_switches
-- The `state` script output is normalized to lowercase and compared against `on_value` (default `"true"`).
-- on_value should be set to a string and use quotes. Default value is `"true"`.
-- If both `fileState` and `state` are configured, `fileState` takes precedence: the state script is not used for status changes and the configured file flag is used instead.
-- If using fileState your on and off scripts should create the fileState file and delete the fileState file for homekit to see the changes.
-- If a script returns a non-zero exit code but still prints a valid value to stdout (for example `true` or `false`), the plugin will use stdout to determine state. You can set fail_on_state_exit_code to true to treat non-zero `state` exit code as read error.
-- When `polling` is enabled, the `state` script is executed on the configured interval and updates HomeKit if the value changes.
-- Polling options are ignored when `fileState` is configured, since `fileState` already uses filesystem change notifications to dynamically update homekit status.
-- When `state_cache_ttl_ms` is greater than `0`, `state` reads are cached briefly to prevent duplicate script executions from burst `get` requests.
-- By default, manual HomeKit ON/OFF actions do **not** reset or extend `state_cache_ttl_ms`. Set `reset_state_cache_on_set` to `true` if you want successful manual set actions to reset the TTL timer and seed the cache with the newly set state.
-- If multiple `get` requests arrive while a state command is already running, they are coalesced and share the same in-flight command result.
-- Each `getState` request writes a single result log entry in the format `GetState <name>: ON/OFF (path: <homekit-get|polling>, source: <state-script|ttl-cache|in-flight-coalesced|file-state>)`. Where Path is telling you if this was the result of a polling request or a homekit initiated get request (out of the plugin's control). And source is where the value was sourced from, state-script execution result, ttl cache, in-flight coalesced, or from file-state.  
-- The TTL cache is per-accessory instance (per configured outlet/switch), not global across all accessories.
-- At startup with `polling_on_start: true`, the first read for each accessory is a cache miss by design, so one state-script execution per accessory is expected before subsequent reads are served from TTL.
+## Advanced behavior
 
-## Platform configuration example (recommended)
+### State sources and polling
+
+Choose a state command or a `fileState` path for each On/Off switch. With a state command, Script2 trims and lowercases the command output and the configured `on_value` before comparing them. The default match is the string `"true"`.
+
+With `fileState`, file existence means ON and absence means OFF. Your ON/OFF scripts should create and delete the flag as appropriate. Script2 watches file creation/deletion and updates HomeKit without running the ON/OFF commands again. The parent directory must already exist; the flag itself may be absent at startup.
+
+If both sources are supplied, `fileState` takes precedence. Polling options apply only to command-based state. With polling enabled, `polling_interval` controls the interval; `polling_on_start` controls the initial state read. The initial command-state read is a cache miss.
+
+### State caching and shared reads
+
+`state_cache_ttl_ms` sets how long a switch can reuse a stored command-state result. The cache is per switch. A value of `0` disables stored-result caching, but simultaneous reads still share a state command that is already running.
+
+By default, a successful manual action does not restart the cache lifetime. Enable `reset_state_cache_on_set` to seed the cache with the new state and restart that timer after a successful action.
+
+### Long-running commands and action order
+
+`command_timeout` limits how long an external command may run. `homekit_set_ack_timeout_ms` controls whether an On/Off request can be acknowledged to HomeKit before that command finishes. Its default is `0`, which waits for completion.
+
+For an action that may take up to two minutes, set Command Timeout to **120 seconds** and HomeKit Set Acknowledgement to **5 seconds** in the UI. The equivalent fields to merge into that On/Off switch's JSON entry are:
 
 ```json
-"platforms": [
-  {
-    "platform": "Script2Platform",
-    "name": "Script2",
-    "on_off_switches": [
-      {
-        "name": "Outlet 1",
-        "on": "/opt/scripts/on.sh 1",
-        "off": "/opt/scripts/off.sh 1",
-        "state": "/opt/scripts/state.sh 1",
-        "on_value": "true",
-        "command_timeout": 120000,
-        "homekit_set_ack_timeout_ms": 5000
-      },
-      {
-        "name": "Outlet 2",
-        "on": "/opt/scripts/on.sh 2",
-        "off": "/opt/scripts/off.sh 2",
-        "fileState": "/opt/scripts/outlet2.flag",
-        "polling": false
-      }
-    ],
-    "stateless_switches": [
-      {
-        "name": "Outlet 1 Reboot",
-        "trigger": "/opt/scripts/reboot.sh 1",
-        "auto_reset_ms": 500,
-        "command_timeout": 30000,
-        "stateless_trigger_on": "off"
-      },
-      {
-        "name": "Outlet 2 Reboot",
-        "trigger": "/opt/scripts/reboot.sh 2",
-        "auto_reset_ms": 700,
-        "stateless_trigger_on": "on"
-      }
-    ]
-  }
-]
+{
+  "command_timeout": 120000,
+  "homekit_set_ack_timeout_ms": 5000
+}
 ```
 
-## Installation
+Early acknowledgement means HomeKit has received a response; it does not prove the external action completed. The command continues under its execution timeout. If it later fails, Script2 bypasses the state cache and uses the configured state source to correct HomeKit. An authoritative `state` or `fileState` source is required.
 
-(Requires Node.js 22.13+ within Node 22, or Node 24.)
+For each switch, duplicate action requests share one execution and opposite actions wait in order. Acknowledgement does not advance that queue. Reads and polling during an action are deferred, and older read results cannot overwrite a newer action's state.
 
-1. Install homebridge using: `npm install -g homebridge`
-2. Install **1.0.1** / **latest** using the Homebridge UI version selector
-3. Update your configuration file.
-4. Ensure scripts are executable and accessible by the Homebridge service user.
+### Stateless reset behavior
+
+`stateless_trigger_on` chooses whether ON or OFF activates the trigger. When it is `off`, the tile normally rests at ON. Concurrent activations share one execution; a later intentional activation can run again.
+
+The `auto_reset_ms` delay starts when the command settles, including after a failure. Resetting the tile changes its display only and does not execute another command.
+
+### Errors and logging
+
+Successful ON/OFF and trigger completions are logged at **info** level. Routine successful reads, polling, and cache/shared-read messages are **debug** only. Acknowledgement and command completion are separate events.
+
+A state-read result uses this format:
+
+```text
+GetState <name>: ON/OFF (path: <request origin>, source: <state source>)
+```
+
+The request origin is `homekit-get` or `polling`; the state source is `state-script`, `ttl-cache`, `in-flight-coalesced`, or `file-state`. Errors identify the accessory and action. Raw commands, stdout, and stderr are omitted from plugin diagnostics because scripts may contain credentials.
+
+Timeouts, terminated state commands, and output overflow are failures even if partial output was printed. For an ordinary nonzero state-command exit, `fail_on_state_exit_code` determines whether otherwise usable stdout can still determine state. ON/OFF and trigger commands retain their stderr-as-failure policy.
+
+### Storage and shutdown
+
+Plugin state caching is in memory; Homebridge manages accessory persistence. Script2 reads and watches configured state files without creating them. Any plugin-owned files must be inside Homebridge's actual storage directory. Adjust example script and log paths to your installation.
+
+Shutdown rejects pending work, stops tracked processes, watchers, and timers, and ignores late completions. Scripts can spawn detached descendants; stopping the immediate process cannot guarantee those descendants stop.
 
 ## Troubleshooting FAQ
 
