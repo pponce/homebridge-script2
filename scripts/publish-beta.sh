@@ -54,7 +54,7 @@ node -e 'const p=require("./package.json"),v=require("./published-versions.json"
 npm view homebridge-script2 dist-tags.latest --registry="$script2_registry" > stable-before.txt
 
 echo '===== VERIFY BETA ====='
-npm ci --ignore-scripts --registry="$script2_registry"
+npm ci --include=dev --ignore-scripts --registry="$script2_registry"
 npm run check
 npm test
 npm run test:installed

@@ -12,14 +12,12 @@
         "type": "string",
         "default": "Script2Platform",
         "const": "Script2Platform",
-        "required": true,
         "description": "Required platform identifier for Homebridge."
       },
       "name": {
         "title": "Platform Name",
         "type": "string",
         "default": "Script2",
-        "required": true,
         "description": "Display name for this platform instance in Homebridge."
       },
       "on_off_switches": {
@@ -236,6 +234,9 @@
         "expanded": false,
         "default": []
       }
-    }
+    },
+    "required": [
+      "platform"
+    ]
   }
 }

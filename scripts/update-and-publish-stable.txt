@@ -1,9 +1,9 @@
 {
-  echo '===== BEGIN SCRIPT2 1.0.0 — COPY OUTPUT FROM HERE ====='
+  echo '===== BEGIN SCRIPT2 1.0.1 — COPY OUTPUT FROM HERE ====='
   bash <<'SCRIPT2_STABLE'
 set -e
 set -o pipefail
-trap 'script2_status=$?; echo "===== END SCRIPT2 1.0.0 — STATUS $script2_status — COPY THROUGH HERE ====="' EXIT
+trap 'script2_status=$?; echo "===== END SCRIPT2 1.0.1 — STATUS $script2_status — COPY THROUGH HERE ====="' EXIT
 cd "$HOME/devProjects/homebridge-script2"
 if [ -n "$(git status --porcelain)" ]; then
   echo 'STOP: local changes found. Commit or move them before updating.'

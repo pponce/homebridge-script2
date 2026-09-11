@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.1 — 2026-09-11
+
+# ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
+
+**For users upgrading from versions before 1.0.0: legacy Script2 accessory mode and old platform configuration formats are no longer supported. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
+
+**No configuration changes are required when upgrading from 1.0.0 or 1.0.0-beta.1.**
+
+- Fix invalid boolean `required` keywords in config.schema.json; require `platform` using the main object's required array.
+- Preserve the optional platform display name and all existing switch requirements.
+- Add JSON Schema validation and regression tests for existing configurations and the reported schema error. The validator is a development dependency only.
+- Keep the large pre-1.0 migration warning in release notes and changelog.
+
+[Full 1.0.1 release notes](releases/v1.0.1.md)
+
 ## 1.0.0 — 2026-09-11
 
 # ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**

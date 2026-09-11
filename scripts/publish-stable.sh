@@ -42,7 +42,7 @@ echo "Release work directory: $script2_work"
 git archive "$script2_source" | tar -x -C "$script2_work"
 git ls-remote --tags origin > "$script2_work/remote-tags.txt"
 cd "$script2_work"
-node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.0"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.0 stable metadata.");'
+node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.1"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.1 stable metadata.");'
 script2_version="$(node -p 'require("./package.json").version')"
 script2_tag="v$script2_version"
 script2_notes="releases/$script2_tag.md"
@@ -55,7 +55,7 @@ node -e 'const p=require("./package.json"),v=require("./published-versions.json"
 npm view homebridge-script2 dist-tags.latest --registry="$script2_registry" > stable-before.txt
 
 echo '===== VERIFY STABLE RELEASE ====='
-npm ci --ignore-scripts --registry="$script2_registry"
+npm ci --include=dev --ignore-scripts --registry="$script2_registry"
 npm run check
 npm test
 npm run test:installed
@@ -84,7 +84,7 @@ else
 fi
 npm view homebridge-script2 dist-tags.latest --registry="$script2_registry" > stable-after.txt
 if [ "$(cat stable-after.txt)" != "$script2_version" ]; then
-  echo 'STOP: npm latest does not point to 1.0.0; inspect npm dist-tags before continuing.'
+  echo 'STOP: npm latest does not point to 1.0.1; inspect npm dist-tags before continuing.'
   false
 fi
 echo "Stable release is ready: homebridge-script2@$script2_version (latest)."

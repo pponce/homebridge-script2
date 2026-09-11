@@ -8,13 +8,15 @@ Execute custom scripts via HomeKit / Apple Home using Homebridge.
 
 **Version 1.0.0 removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
 
-**Stable release: 1.0.0.** Install the `latest` channel. Homebridge verification is pending; this release does not claim certification.
+**Stable release: 1.0.1.** Install the `latest` channel. Homebridge verification is pending; this release does not claim certification.
+
+**Updating from 1.0.0?** Version 1.0.1 fixes configuration-schema metadata and requires no configuration changes.
 
 ## Install or update
 
 1. Save a Homebridge backup and your full config.json.
 2. Follow [Migration](#migration) if you use an older configuration.
-3. In Homebridge UI, install Script2 and select **1.0.0** / **latest** using the plugin version selector.
+3. In Homebridge UI, install Script2 and select **1.0.1** / **latest** using the plugin version selector.
 4. Open Settings, add On/Off or Stateless switches, choose a state source, and review Advanced settings. Opening or saving settings never runs commands.
 5. Use Homebridge Save, then restart the instance or child bridge running Script2.
 
@@ -38,7 +40,7 @@ Timeouts, terminated state commands and output overflow are failures even if par
 
 Plugin state caching is in memory and Homebridge manages accessory persistence. Script2 reads/watches user-selected state files; it does not create them. The state file may be absent at startup, but its parent directory must already exist. Any plugin-owned files must be inside Homebridge's actual storage directory. Adjust example script/log paths to your installation.
 
-[Changelog](CHANGELOG.md) · [1.0.0 release notes](https://github.com/pponce/homebridge-script2/releases/tag/v1.0.0)
+[Changelog](CHANGELOG.md) · [1.0.1 release notes](https://github.com/pponce/homebridge-script2/releases/tag/v1.0.1)
 
 Core of the code written by [@xxcombat](https://github.com/xxcombat/). Original plugin: [homebridge-script](https://github.com/xxcombat/homebridge-script).
 
@@ -164,7 +166,7 @@ For existing synchronous behavior, omit `homekit_set_ack_timeout_ms` or set it t
 (Requires Node.js 22.13+ within Node 22, or Node 24.)
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install **1.0.0** / **latest** using the Homebridge UI version selector
+2. Install **1.0.1** / **latest** using the Homebridge UI version selector
 3. Update your configuration file.
 4. Ensure scripts are executable and accessible by the Homebridge service user.
 
