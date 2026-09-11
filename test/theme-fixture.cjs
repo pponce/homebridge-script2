@@ -9,7 +9,7 @@ const hostStyles = `
 body { color:#212529; background:#fff; font-family:Arial,sans-serif; }
 body.dark-mode, body[class*="config-ui-x-dark-mode"] { color:#fff; background:#242424; }
 .form-control, .form-select { color:#212529; background-color:#fff; border:1px solid #ced4da; border-radius:.25rem; padding:.375rem .75rem; }
-.form-control:disabled { color:#6c757d; background:#e9ecef; }
+.form-control:disabled { background:#e9ecef; opacity:1; }
 .form-control::placeholder { color:#636363 !important; opacity:1 !important; }
 .btn { display:inline-block; padding:.375rem .75rem; border:1px solid transparent; border-radius:.25rem; }
 .btn-outline-primary { color:#0d6efd; border-color:#0d6efd; background:transparent; }
