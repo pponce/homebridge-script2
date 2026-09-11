@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Fix Homebridge night-mode contrast for custom settings text, fields, help, tables, and buttons. Follow Homebridge's selected theme even when the operating system uses a different appearance.
+- Add browser checks for light/night theme switching, text and field-border contrast, and mobile layout.
+
 ## 1.0.2 — 2026-09-11
 
 # ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**

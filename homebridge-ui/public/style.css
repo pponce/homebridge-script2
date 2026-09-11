@@ -1,5 +1,5 @@
 .script2-settings, .script2-settings * { box-sizing: border-box; }
-.script2-settings { max-width: 960px; margin: auto; padding: 0.25rem; color: var(--bs-body-color, inherit); }
+.script2-settings { max-width: 960px; margin: auto; padding: 0.25rem; color: inherit; }
 .script2-intro { border-left: 4px solid #d99130; padding: 0.4rem 1.2rem; margin-bottom: 1.5rem; }
 .script2-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.13em; }
 .script2-intro h2 { margin: 0.45rem 0; font-size: 1.7rem; }
@@ -38,3 +38,60 @@
 .script2-settings input[type=checkbox] { width:auto; margin-right:0.5rem; }
 .script2-settings code { overflow-wrap:anywhere; }
 .script2-settings .alert { padding:0.8rem; border:1px solid var(--bs-border-color,#8886);border-radius:0.5rem; margin-bottom:1rem; }
+
+/* Homebridge forwards its selected theme classes to the custom-UI iframe.
+   Do not use prefers-color-scheme: the user's Homebridge theme takes priority.
+   Bootstrap's --bs-body-color can retain its light-theme value in night mode. */
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings {
+  color: #f1f1f1;
+  color-scheme: dark;
+  --bs-border-color: #858585;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(.script2-device, .script2-pdu, .script2-outlet, .script2-empty) {
+  background-color: #2b2b2b;
+  border-color: #858585;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(h2, h3, label, summary, table, th, td) { color: inherit; }
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(small, caption, .script2-help, .script2-footer) {
+  color: #d3d3d3;
+  opacity: 1;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(.form-control, .form-select, textarea) {
+  color: #f1f1f1;
+  background-color: #333333;
+  border-color: #858585;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(.form-control, textarea)::placeholder {
+  color: #bdbdbd !important;
+  opacity: 1 !important;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(.form-control, .form-select):is(:disabled, [readonly]) {
+  color: #d3d3d3;
+  background-color: #2b2b2b;
+  opacity: 1;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings .form-select {
+  --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23f1f1f1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings input[type=checkbox] { accent-color: #e9ae57; }
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(.btn-outline-primary, .btn-outline-secondary) {
+  color: #f1f1f1;
+  border-color: #949494;
+  background-color: transparent;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(.btn-outline-primary, .btn-outline-secondary):is(:hover, :focus-visible) {
+  color: #ffffff;
+  background-color: #414141;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings .btn-outline-danger { color: #ffb4ab; border-color: #ffb4ab; }
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings .btn-outline-danger:is(:hover, :focus-visible) { color: #ffffff; background-color: #6e2727; }
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings .btn-primary {
+  color: #171717 !important;
+  background-color: #e9ae57 !important;
+  border-color: #e9ae57 !important;
+}
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings .btn-primary:is(:hover, :focus-visible) { background-color: #f2c17b !important; }
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings .alert { color: #f1f1f1; background-color: #333333; }
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is(a:not(.btn), code) { color: #9dccff; }
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :is([aria-invalid=true], .is-invalid) { border-color: #ffb4ab; }
+:is(body.dark-mode, body[class*="config-ui-x-dark-mode"]) .script2-settings :focus-visible { outline: 2px solid #f2c17b; outline-offset: 3px; }
