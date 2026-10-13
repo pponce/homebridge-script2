@@ -7,7 +7,8 @@ import subprocess
 import sys
 
 for script in ["scripts/publish-beta.sh", "scripts/update-and-publish-beta.txt",
-               "scripts/publish-stable.sh", "scripts/update-and-publish-stable.txt"]:
+               "scripts/publish-stable.sh", "scripts/update-and-publish-stable.txt",
+               "scripts/release-tools.sh"]:
     subprocess.run(["bash", "-n", script], check=True)
 channel = sys.argv[1] if len(sys.argv) > 1 else "beta"
 assert channel in ("beta", "stable")
@@ -50,3 +51,6 @@ finally:
 print(output.decode())
 assert os.waitstatus_to_exitcode(status) == 0
 assert b"PASS:" in output
+if channel == 'stable':
+    subprocess.run([sys.executable, 'scripts/check-release-tools.py'], check=True)
+

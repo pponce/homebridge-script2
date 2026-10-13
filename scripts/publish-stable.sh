@@ -6,6 +6,8 @@ script2_repo='pponce/homebridge-script2'
 script2_branch='master'
 script2_registry='https://registry.npmjs.org/'
 export GH_HOST=github.com
+unset GH_TOKEN GITHUB_TOKEN GH_PROMPT_DISABLED
+export GH_BROWSER=echo
 # The SSH wrapper reads its program from a heredoc. Reconnect interactive
 # commands to the terminal so npm can wait for browser authentication.
 if ! ( : </dev/tty ) 2>/dev/null; then
@@ -13,19 +15,28 @@ if ! ( : </dev/tty ) 2>/dev/null; then
   false
 fi
 script2_interactive() { "$@" </dev/tty >/dev/tty; }
-for script2_tool in git node npm tar gh; do command -v "$script2_tool" >/dev/null; done
-cd "$(git rev-parse --show-toplevel)"
+for script2_tool in git node npm tar curl; do command -v "$script2_tool" >/dev/null; done
+script2_project_root="$(git rev-parse --show-toplevel)"
+cd "$script2_project_root"
 if [ "$(git branch --show-current)" != "$script2_branch" ]; then echo 'STOP: switch to master first.'; false; fi
 if [ -n "$(git status --porcelain)" ]; then echo 'STOP: commit or move local changes before publishing.'; false; fi
 case "$(git remote get-url origin)" in
   git@github.com:pponce/homebridge-script2.git|https://github.com/pponce/homebridge-script2.git|https://github.com/pponce/homebridge-script2|ssh://git@github.com/pponce/homebridge-script2.git) ;;
   *) echo 'STOP: unexpected origin repository.'; false ;;
 esac
+git remote set-url origin git@github.com:pponce/homebridge-script2.git
+. "$script2_project_root/scripts/release-tools.sh"
+script2_setup_release_tools "$script2_project_root"
 git fetch origin "$script2_branch"
 script2_source="$(git rev-parse HEAD)"
 if [ "$script2_source" != "$(git rev-parse "origin/$script2_branch")" ]; then echo 'STOP: local branch must match its remote commit.'; false; fi
 node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===22&&b>=13)||a===24))throw Error("Use Node 22.13+ within Node 22, or Node 24.");'
-if ! gh auth status --hostname github.com >/dev/null 2>&1; then script2_interactive gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key; fi
+script2_gh_user="$(gh api user --jq .login 2>/dev/null || true)"
+if [ "$script2_gh_user" != 'pponce' ]; then
+  echo 'GitHub API login is needed to create the official release.'
+  echo 'Open the displayed URL in your browser, enter the displayed code, and authenticate as pponce.'
+  script2_interactive gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key
+fi
 script2_gh_user="$(gh api user --jq .login)"
 if [ "$script2_gh_user" != 'pponce' ]; then echo 'STOP: GitHub account must be pponce.'; false; fi
 script2_npm_user="$(npm whoami --registry="$script2_registry" 2>/dev/null || true)"
@@ -35,22 +46,24 @@ if [ "$script2_npm_user" != 'klidec' ]; then
 fi
 script2_npm_user="$(npm whoami --registry="$script2_registry")"
 if [ "$script2_npm_user" != 'klidec' ]; then echo 'STOP: npm account must be klidec.'; false; fi
-script2_work="$(mktemp -d "${TMPDIR:-/tmp}/script2-stable.XXXXXX")"
+mkdir -p "$script2_project_root/release-work/1.0.4"
+script2_work="$(mktemp -d "$script2_project_root/release-work/1.0.4/build-XXXXXX")"
 echo "Source commit: $script2_source"
 echo "Accounts verified: GitHub $script2_gh_user; npm $script2_npm_user"
 echo "Release work directory: $script2_work"
 git archive "$script2_source" | tar -x -C "$script2_work"
 git ls-remote --tags origin > "$script2_work/remote-tags.txt"
 cd "$script2_work"
-node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.3"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.3 stable metadata.");'
+node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.4"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.4 stable metadata.");'
 script2_version="$(node -p 'require("./package.json").version')"
 script2_tag="v$script2_version"
 script2_notes="releases/$script2_tag.md"
 test -s "$script2_notes"
+node -e 'const fs=require("fs"),p=require("./package.json"),lock=require("./package-lock.json");if(lock.version!==p.version||lock.packages[""].version!==p.version)throw Error("Package and lockfile versions differ.");if(!fs.readFileSync("CHANGELOG.md","utf8").includes(`## ${p.version} —`))throw Error("Versioned changelog entry is missing.");if(!fs.readFileSync(`releases/v${p.version}.md`,"utf8").startsWith(`# Script2 ${p.version}\n`))throw Error("Release notes version does not match.");'
 node -e 'const fs=require("fs"),p=require("./package.json");if(fs.readFileSync("remote-tags.txt","utf8").split("\n").some(l=>l.split(/\s+/)[1]===`refs/tags/v${p.version}`))throw Error("Tag already exists; it will not be moved.");'
 gh api "repos/$script2_repo/releases?per_page=100" --paginate --jq '.[].tag_name' > github-releases.txt
 node -e 'const fs=require("fs"),p=require("./package.json");if(fs.readFileSync("github-releases.txt","utf8").split("\n").includes(`v${p.version}`))throw Error("GitHub release already exists.");'
-npm view homebridge-script2 versions --json --registry="$script2_registry" > published-versions.json
+npm view homebridge-script2 versions --json --prefer-online --registry="$script2_registry" > published-versions.json
 node -e 'const p=require("./package.json"),v=require("./published-versions.json");if(!Array.isArray(v)||v.includes(p.version))throw Error("Version already published or unexpected registry response. Do not republish an existing version.");'
 npm view homebridge-script2 dist-tags.latest --registry="$script2_registry" > stable-before.txt
 
@@ -82,9 +95,23 @@ else
   echo 'Do not publish the same npm version again.'
   false
 fi
-npm view homebridge-script2 dist-tags --json --prefer-online --registry="$script2_registry" > stable-after.json
-node -e 'const fs=require("fs"); const tags=JSON.parse(fs.readFileSync("stable-after.json","utf8")); const expected=require("./package.json").version; if(tags.latest!==expected) throw Error(`Publication completed, but npm latest reports ${tags.latest}; expected ${expected}. Check dist-tags; do not republish.`);'
+gh api "repos/$script2_repo/releases/tags/$script2_tag" > github-release.json
+node -e 'const fs=require("fs"),p=require("./package.json"),r=require("./github-release.json"),notes=fs.readFileSync(`releases/v${p.version}.md`,"utf8");if(r.draft||r.prerelease||r.tag_name!==`v${p.version}`||r.body.trim()!==notes.trim())throw Error("GitHub release or release notes do not match the stable package.");'
+script2_latest=''
+for script2_attempt in {1..12}; do
+  script2_latest="$(npm view homebridge-script2 dist-tags.latest --prefer-online --registry="$script2_registry" 2>/dev/null || true)"
+  if [ "$script2_latest" = "$script2_version" ]; then break; fi
+  if [ "$script2_attempt" -lt 12 ]; then
+    echo 'Waiting for npm latest to reflect the new publication...'
+    sleep 5
+  fi
+done
+if [ "$script2_latest" != "$script2_version" ]; then
+  echo "STOP: publication completed, but npm latest reports $script2_latest; expected $script2_version. Check dist-tags; do not republish."
+  false
+fi
 echo "Stable release is ready: homebridge-script2@$script2_version (latest)."
 echo "GitHub: https://github.com/$script2_repo/releases/tag/$script2_tag"
 echo 'Homebridge review: https://github.com/homebridge/plugins/issues/new/choose'
 echo 'Install/update Script2 in Homebridge UI, then restart its instance or child bridge.'
+

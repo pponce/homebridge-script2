@@ -1,6 +1,6 @@
 {
   "name": "homebridge-script2",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "MIT",
   "description": "HomeKit script switches with file or command state, shared reads, serialized actions and optional early acknowledgement",
   "keywords": [
@@ -63,3 +63,4 @@
     "ajv": "8.17.1"
   }
 }
+

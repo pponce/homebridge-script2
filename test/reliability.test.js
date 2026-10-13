@@ -89,8 +89,8 @@ test('stateless duplicate activation executes once and zero reset is retained', 
   apiHarness();const {logic,calls}=harness({device_type:'stateless',trigger:'trigger',auto_reset_ms:0});const updates=[];logic.switchService={updateCharacteristic:(c,v)=>updates.push(v)};let count=0;
   logic.setStatelessTrigger(true,()=>count++);logic.setStatelessTrigger(true,()=>count++);assert.equal(calls.length,1);calls[0].callback(null,'','');await new Promise(r=>setTimeout(r,10));assert.equal(count,2);assert.deepEqual(updates,[false]);logic.shutdown();
 });
-test('command diagnostics and failing loggers do not leak or replay commands', () => {
-  const {logic,calls,logs}=harness({on:'secret-password'});logic.setState(true,()=>{});calls[0].callback(new Error('secret-password'),'secret-password','secret-password');assert.ok(!JSON.stringify(logs).includes('secret-password'));
+test('normal command diagnostics and failing loggers do not leak or replay commands', () => {
+  const {logic,calls,logs}=harness({on:'secret-password'});logic.setState(true,()=>{});calls[0].callback(new Error('secret-password'),'secret-password','secret-password');assert.ok(!JSON.stringify(logs.filter(([level])=>level!=='debug')).includes('secret-password'));
   const bad=Object.fromEntries(['debug','info','warn','error'].map(l=>[l,()=>{throw new Error('logger');}]));let done=0;
   const d=new Script2DeviceLogic(bad,valid,(c,o,cb)=>cb(null,'',''));d.setState(true,()=>done++);assert.equal(done,1);
 });
@@ -98,3 +98,4 @@ test('real external process deadline is bounded and does not use partial output'
   const {logic}=harness({command_timeout:100,state:`"${process.execPath}" -e "console.log('true');setTimeout(()=>{},10000)"`},require('node:child_process').exec);
   const error=await new Promise(resolve=>logic.getState(resolve));assert.ok(error);assert.equal(logic.lastStateRead,null);logic.shutdown();
 });
+

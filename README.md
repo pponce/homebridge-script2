@@ -6,13 +6,15 @@
 
 Run your own scripts from Apple Home and Siri using Homebridge.
 
-# ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
+**Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
 
-**Version 1.0.0 removes legacy Script2 accessory mode and old platform configuration formats. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
+## ⚠️ Upgrading from a version before 1.0.0
 
-**Stable release: 1.0.2.** Install the `latest` channel. Homebridge verification is pending; this release does not claim certification.
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
 
-**Updating from 1.0.0 or 1.0.1?** Version 1.0.2 includes the schema fix and development dependency maintenance. No configuration changes are required.
+**Stable release: 1.0.4.** Install the `latest` channel. Homebridge verification is pending; this release does not claim certification.
+
+**Updating from a stable 1.0.x release?** Version 1.0.4 accepts successful commands that write stderr and adds debug stderr details. No configuration changes are required.
 
 [Quick start](#quick-start) · [Migration](#migration) · [Minimal configuration](#minimal-configuration) · [User-provided scripts](#user-provided-scripts) · [Settings reference](#settings-reference) · [Full example](#full-configuration-example) · [Advanced behavior](#advanced-behavior) · [FAQ](#troubleshooting-faq) · [Changelog](CHANGELOG.md)
 
@@ -30,7 +32,7 @@ See [advanced behavior](#advanced-behavior) for execution details and [the featu
 
 1. Save a Homebridge backup and your full config.json.
 2. Follow [Migration](#migration) if you use an older configuration.
-3. In Homebridge UI, install Script2 and select **1.0.2** / **latest** using the plugin version selector.
+3. In Homebridge UI, install Script2 and select **1.0.4** / **latest** using the plugin version selector.
 4. For a new setup, open Settings and add an **On/Off switch** or a **Stateless switch**. Enter your commands; On/Off switches also need a state command or state file. For an existing valid setup, keep your current entries.
 5. Review Advanced settings if needed, use Homebridge Save, then restart the instance or child bridge running Script2. Opening or saving settings never runs commands.
 
@@ -220,9 +222,11 @@ A state-read result uses this format:
 GetState <name>: ON/OFF (path: <request origin>, source: <state source>)
 ```
 
-The request origin is `homekit-get` or `polling`; the state source is `state-script`, `ttl-cache`, `in-flight-coalesced`, or `file-state`. Errors identify the accessory and action. Raw commands, stdout, and stderr are omitted from plugin diagnostics because scripts may contain credentials.
+The request origin is `homekit-get` or `polling`; the state source is `state-script`, `ttl-cache`, `in-flight-coalesced`, or `file-state`. Errors identify the accessory and action. Raw commands and stdout are omitted from plugin diagnostics. When a command writes nonblank stderr, Script2 logs a warning without its contents; enable Homebridge debug logging to see the stderr text, limited to 4,096 characters with control characters escaped. Debug stderr may contain credentials or other sensitive script output; remove secrets before sharing logs.
 
-Timeouts, terminated state commands, and output overflow are failures even if partial output was printed. For an ordinary nonzero state-command exit, `fail_on_state_exit_code` determines whether otherwise usable stdout can still determine state. ON/OFF and trigger commands retain their stderr-as-failure policy.
+ON/OFF and trigger commands succeed when they exit `0`, even if they write stderr. Nonzero exits, timeouts, termination, and other execution errors still fail. This applies to both command-based and file-based state; changing a state file does not override an action command failure.
+
+Timeouts, terminated state commands, and output overflow are failures even if partial output was printed. For an ordinary nonzero state-command exit, `fail_on_state_exit_code` determines whether otherwise usable stdout can still determine state. Its default is `false`: log the nonzero exit and use usable stdout; enable it to return the state-read error to HomeKit. This setting applies only to the state command, and stderr alone does not cause a state-read failure.
 
 ### Storage and shutdown
 
@@ -378,3 +382,4 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 ---
 
 Originally based on [homebridge-script](https://github.com/xxcombat/homebridge-script).
+
