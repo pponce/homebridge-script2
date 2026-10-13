@@ -2,13 +2,13 @@
 
 ## 1.0.4 — 2026-10-13
 
-# ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
+**Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
 
-**For users upgrading from versions before 1.0.0: legacy Script2 accessory mode and old platform configuration formats are no longer supported. Review and save a copy of your current Homebridge config.json before installing, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md). Legacy configurations will no longer run.**
+### ⚠️ Upgrading from a version before 1.0.0
 
-**Already using a stable 1.0.x release or 1.0.0-beta.1? No configuration changes or additional migration are required.**
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
 
-## Successful commands with stderr
+### Successful commands with stderr
 
 - Treat ON/OFF and stateless trigger commands that exit `0` as successful when they write stderr, including switches using a state file (issue #125).
 - Log a warning when stderr is present and show bounded, escaped stderr text in Homebridge debug logs. Ordinary logs continue to omit script output.
@@ -16,7 +16,7 @@
 
 Debug stderr may include sensitive script output. Remove secrets before sharing logs.
 
-## Update
+### Update
 
 Select **1.0.4** / **latest** in Homebridge UI and restart the instance or child bridge running Script2.
 

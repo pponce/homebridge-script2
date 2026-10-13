@@ -13,6 +13,7 @@ case "$(git remote get-url origin)" in
   git@github.com:pponce/homebridge-script2.git|https://github.com/pponce/homebridge-script2.git|https://github.com/pponce/homebridge-script2|ssh://git@github.com/pponce/homebridge-script2.git) ;;
   *) echo 'STOP: unexpected origin repository.'; false ;;
 esac
+git remote set-url origin git@github.com:pponce/homebridge-script2.git
 git fetch origin master
 if git show-ref --verify --quiet refs/heads/master; then
   git switch master

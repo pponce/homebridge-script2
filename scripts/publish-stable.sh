@@ -6,6 +6,8 @@ script2_repo='pponce/homebridge-script2'
 script2_branch='master'
 script2_registry='https://registry.npmjs.org/'
 export GH_HOST=github.com
+unset GH_TOKEN GITHUB_TOKEN GH_PROMPT_DISABLED
+export GH_BROWSER=echo
 # The SSH wrapper reads its program from a heredoc. Reconnect interactive
 # commands to the terminal so npm can wait for browser authentication.
 if ! ( : </dev/tty ) 2>/dev/null; then
@@ -21,11 +23,17 @@ case "$(git remote get-url origin)" in
   git@github.com:pponce/homebridge-script2.git|https://github.com/pponce/homebridge-script2.git|https://github.com/pponce/homebridge-script2|ssh://git@github.com/pponce/homebridge-script2.git) ;;
   *) echo 'STOP: unexpected origin repository.'; false ;;
 esac
+git remote set-url origin git@github.com:pponce/homebridge-script2.git
 git fetch origin "$script2_branch"
 script2_source="$(git rev-parse HEAD)"
 if [ "$script2_source" != "$(git rev-parse "origin/$script2_branch")" ]; then echo 'STOP: local branch must match its remote commit.'; false; fi
 node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===22&&b>=13)||a===24))throw Error("Use Node 22.13+ within Node 22, or Node 24.");'
-if ! gh auth status --hostname github.com >/dev/null 2>&1; then script2_interactive gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key; fi
+script2_gh_user="$(gh api user --jq .login 2>/dev/null || true)"
+if [ "$script2_gh_user" != 'pponce' ]; then
+  echo 'GitHub API login is needed to create the official release.'
+  echo 'Open the displayed URL in your browser, enter the displayed code, and authenticate as pponce.'
+  script2_interactive gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key
+fi
 script2_gh_user="$(gh api user --jq .login)"
 if [ "$script2_gh_user" != 'pponce' ]; then echo 'STOP: GitHub account must be pponce.'; false; fi
 script2_npm_user="$(npm whoami --registry="$script2_registry" 2>/dev/null || true)"

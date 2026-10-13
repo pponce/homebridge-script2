@@ -24,15 +24,17 @@ Merge PR #126 after its checks pass before using the repository's update wrapper
 
 The helper refuses dirty/unexpected checkouts and existing versions/tags. It validates matching package/lockfile versions, a versioned changelog entry and release notes, packs a source snapshot, installs and tests the exact archive, then publishes `homebridge-script2@1.0.4` to npm `latest`. It creates a normal GitHub release marked latest from the exact source commit, using [releases/v1.0.4.md](releases/v1.0.4.md), with the archive and both final PNG icons attached. The publisher checks the official release body against the notes file and verifies npm's latest tag.
 
-Interactive commands reconnect to the controlling SSH terminal even though the outer wrapper reads commands from a heredoc. npm uses `--browser=false`: open the displayed authentication URL in your local browser and leave SSH running while npm waits. An existing npm login does not eliminate publish-time authentication. A failed attempt's URL should not be reused.
+Git fetch/pull/tag operations use the repository's SSH remote. Creating the official GitHub release still requires GitHub API authentication: the publisher tests actual API access and starts the browser/device-code login when necessary, instead of relying only on `gh auth status`. Environment token overrides are cleared in the child shell; `GH_BROWSER=echo` displays the browser URL for manual opening.
+
+Interactive commands reconnect to the controlling SSH terminal even though the outer wrapper reads commands from a heredoc. npm uses `--browser=false` for login and publish: open the displayed authentication URL in your local browser and leave SSH running while npm waits. An existing npm login does not eliminate publish-time authentication. A failed attempt's URL should not be reused.
 
 If npm succeeds but GitHub fails, inspect for a partial release and use the printed GitHub-only recovery command if the release is absent. Never publish the same npm version again. The helper does not install the plugin into the running Homebridge instance.
 
 ## Release warnings
 
-The release notes and changelog use a large Markdown heading with a warning symbol and bold backup instruction. Homebridge's Release Notes tab obtains the published GitHub release body; its separate Changelog tab may obtain the tagged or installed CHANGELOG.md. Updating a branch file alone does not rewrite either an existing GitHub release body or an already-published npm archive.
+The current release notes and changelog first state that 1.0.x users can update without configuration changes or migration. A separate warning explicitly applies only to upgrades from versions before 1.0.0; retain the backup instruction and migration link in that section. The same normal-upgrade guidance applies to 1.0.0-beta.1. Homebridge's Release Notes tab obtains the published GitHub release body; its separate Changelog tab may obtain the tagged or installed CHANGELOG.md. Updating a branch file alone does not rewrite either an existing GitHub release body or an already-published npm archive.
 
-The 1.0.1 archive includes the enlarged changelog warning. Keep it prominent in future 1.0 release notes while users are migrating from pre-1.0 configurations.
+Historical 1.0.1–1.0.3 notes used an enlarged general warning. From 1.0.4 onward, make the affected upgrade path explicit instead of presenting that warning to every user.
 
 ## Future beta releases
 
