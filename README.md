@@ -44,6 +44,8 @@ Make scripts executable and use absolute paths accessible to the Homebridge serv
 
 Optional scripts and setup examples are available in [userProvidedScripts](userProvidedScripts/), including a UniFi Vision Enhancer floodlight switch. These scripts are installed separately from the plugin.
 
+Have a useful script to share? Please open a pull request with your scripts in a new subfolder under `userProvidedScripts`. Include a README with setup, usage, and Script2 configuration instructions, then add your folder to the [scripts table](userProvidedScripts/README.md). Follow the [contribution instructions](userProvidedScripts/README.md#contribute-a-script), using the Unifi folder as an example.
+
 ## Migration
 
 **Save your old configuration before installing.** Only `Script2Platform` with `on_off_switches` and `stateless_switches` is supported. [The migration guide](MIGRATION.md) includes before/after JSON for old standalone accessories and platform lists, every removed alias, HomeKit identity guidance, and rollback.
