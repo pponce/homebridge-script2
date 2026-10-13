@@ -2,6 +2,8 @@
 
 Use a Script2 On/Off switch to control the white floodlight on a UniFi camera with an attached Vision Enhancer. ON starts a background worker that renews a five-second lighting command every three seconds. OFF stops renewal and lets the last command expire. No worker runs while OFF.
 
+Before use, review the scripts and the [user-provided scripts disclaimer](../README.md#before-you-run-a-script).
+
 ## Install
 
 These scripts target Linux Mint or another Linux system with `/usr/bin/python3`, `sudo`, a `homebridge` account, and Homebridge storage at `/var/lib/homebridge`.

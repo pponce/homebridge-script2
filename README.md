@@ -44,6 +44,8 @@ Make scripts executable and use absolute paths accessible to the Homebridge serv
 
 Optional scripts and setup examples are available in [userProvidedScripts](userProvidedScripts/), including a UniFi Vision Enhancer floodlight switch. These scripts are installed separately from the plugin.
 
+**Review scripts before running them.** User-provided scripts are supplied **as is**, without warranty. Inclusion in this repository is not an endorsement or a guarantee of safety. You are responsible for reviewing and running any script. To the extent permitted by applicable law, maintainers and contributors disclaim liability for consequences of its use. Read the [usage disclaimer](userProvidedScripts/README.md#before-you-run-a-script).
+
 Have a useful script to share? Please open a pull request with your scripts in a new subfolder under `userProvidedScripts`. Include a README with setup, usage, and Script2 configuration instructions, then add your folder to the [scripts table](userProvidedScripts/README.md). Follow the [contribution instructions](userProvidedScripts/README.md#contribute-a-script), using the Unifi folder as an example.
 
 ## Migration
