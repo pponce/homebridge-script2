@@ -3,8 +3,6 @@ set -euo pipefail
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 uf_dir=/var/lib/homebridge/unifiFloodLight
-uf_unit=unifi-vision-floodlight.service
-uf_unit_path=/etc/systemd/system/$uf_unit
 uf_tmp=$(mktemp -d "$script_dir/.install-XXXXXX")
 trap 'rm -rf "$uf_tmp"' EXIT
 
@@ -24,19 +22,6 @@ cp -- "$script_dir/floodlight.sh" "$uf_tmp/floodlight.sh"
 sudo install -d -o homebridge -g "$uf_group" -m 750 "$uf_dir"
 if sudo test -f "$uf_dir/floodlight.py"; then
   sudo cp -a "$uf_dir/floodlight.py" "$uf_dir/floodlight.py.backup-$uf_stamp"
-fi
-
-# Retire only the systemd service created by the earlier installer.
-if sudo test -e "$uf_unit_path"; then
-  if ! sudo grep -Fq "ExecStart=/usr/bin/python3 $uf_dir/floodlight.py worker" "$uf_unit_path"; then
-    printf '%s\n' 'Existing service does not match the earlier installer; stopping here.' >&2
-    exit 1
-  fi
-  sudo install -o homebridge -g "$uf_group" -m 600 "$uf_unit_path" "$uf_dir/$uf_unit.backup-$uf_stamp"
-  sudo systemctl disable --now "$uf_unit"
-  sudo rm -f "$uf_unit_path"
-  sudo systemctl daemon-reload
-  sudo systemctl reset-failed "$uf_unit" 2>/dev/null || true
 fi
 
 if sudo test -f "$uf_dir/floodlight.py"; then
@@ -63,7 +48,7 @@ sudo -u homebridge "$uf_dir/floodlight.sh" configure </dev/tty
 sudo chmod 600 "$uf_dir/config.json"
 sudo chown homebridge:"$uf_group" "$uf_dir/config.json"
 
-printf '\nInstalled: no systemd service, no worker while OFF.\n'
+printf '\nInstalled. The worker starts with ON and exits after OFF.\n'
 printf 'ON:    %s/floodlight.sh on\n' "$uf_dir"
 printf 'OFF:   %s/floodlight.sh off\n' "$uf_dir"
 printf 'State: %s/floodlight.sh state\n' "$uf_dir"

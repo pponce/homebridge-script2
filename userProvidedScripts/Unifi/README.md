@@ -1,10 +1,10 @@
 # Vision Enhancer floodlight
 
-Use a Script2 On/Off switch to control the white floodlight on a UniFi camera with an attached Vision Enhancer. ON starts a background worker that renews a five-second lighting command every three seconds. OFF stops renewal and lets the last command expire. No worker runs while OFF, and no systemd service is installed.
+Use a Script2 On/Off switch to control the white floodlight on a UniFi camera with an attached Vision Enhancer. ON starts a background worker that renews a five-second lighting command every three seconds. OFF stops renewal and lets the last command expire. No worker runs while OFF.
 
 ## Install
 
-These scripts target Linux Mint or another Linux system with `/usr/bin/python3`, `sudo`, a `homebridge` service user, and Homebridge storage at `/var/lib/homebridge`.
+These scripts target Linux Mint or another Linux system with `/usr/bin/python3`, `sudo`, a `homebridge` account, and Homebridge storage at `/var/lib/homebridge`.
 
 From your checkout of this repository:
 
@@ -14,7 +14,7 @@ bash userProvidedScripts/Unifi/install.sh
 
 The installer uses the local Protect login already saved in `/var/lib/homebridge/config.json`, or prompts for one if it cannot find it. Select a controller and camera if more than one is found. The local account needs permission to run Protect alarm actions; Full Management is the supported setup for this example.
 
-It installs the scripts in `/var/lib/homebridge/unifiFloodLight`, owned by `homebridge`, with directory/script permissions `750`. The private `config.json` has permissions `600`. Setup checks login and enhancer detection without turning on the light. Reinstalling preserves your saved configuration and backs up the previous helper. The installer also removes the matching systemd service from the earlier version, if present.
+It installs the scripts in `/var/lib/homebridge/unifiFloodLight`, owned by `homebridge`, with directory/script permissions `750`. The private `config.json` has permissions `600`. Setup checks login and enhancer detection without turning on the light. Reinstalling preserves your saved configuration and backs up the previous helper.
 
 Temporary installation files stay in this repository folder and are removed when the installer exits.
 
@@ -55,7 +55,7 @@ Logs are `/var/lib/homebridge/unifiFloodLight/floodlight.log` and `floodlight.lo
 sudo -u homebridge tail -n 40 /var/lib/homebridge/unifiFloodLight/floodlight.log
 ```
 
-If a worker exits or an API request fails, state becomes OFF. Another ON command starts a new worker. A Homebridge service restart may stop renewal; a machine reboot leaves the helper OFF.
+If a worker exits or an API request fails, state becomes OFF. Another ON command starts a new worker. Restarting Homebridge may stop renewal; a machine reboot leaves the helper OFF.
 
 ## Configuration and limits
 

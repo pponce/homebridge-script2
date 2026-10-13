@@ -6,4 +6,4 @@ Optional scripts you can run with homebridge-script2. Each folder includes setup
 | --- | --- |
 | [Unifi](Unifi/) | Control a UniFi camera's Vision Enhancer floodlight with an On/Off switch. |
 
-Install scripts separately from the plugin and run them as the Homebridge service user. Commit configuration examples with placeholders; keep actual credentials and runtime files out of the repository.
+Install scripts separately from the plugin and run them as the same account as Homebridge. Commit configuration examples with placeholders; keep actual credentials and runtime files out of the repository.
