@@ -1,0 +1,7 @@
+{
+  "url": "https://PROTECT_CONTROLLER_IP",
+  "username": "YOUR_LOCAL_PROTECT_USERNAME",
+  "password": "YOUR_LOCAL_PROTECT_PASSWORD",
+  "mac": "CAMERA_MAC_WITHOUT_COLONS",
+  "name": "AI Pro"
+}

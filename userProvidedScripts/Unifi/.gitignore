@@ -1,0 +1,11 @@
+config.json
+requested.json
+status.json
+ready.json
+*.lock
+floodlight.log*
+*.backup-*
+.write-*
+.install-*/
+__pycache__/
+*.pyc

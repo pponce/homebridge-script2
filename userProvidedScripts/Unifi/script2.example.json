@@ -1,0 +1,19 @@
+{
+  "platform": "Script2Platform",
+  "name": "Script2",
+  "on_off_switches": [
+    {
+      "name": "Vision Enhancer Floodlight",
+      "unique_serial": "unifi-vision-enhancer-1",
+      "on": "/var/lib/homebridge/unifiFloodLight/floodlight.sh on",
+      "off": "/var/lib/homebridge/unifiFloodLight/floodlight.sh off",
+      "state": "/var/lib/homebridge/unifiFloodLight/floodlight.sh state",
+      "on_value": "true",
+      "polling": true,
+      "polling_interval": 5000,
+      "polling_on_start": true,
+      "command_timeout": 30000,
+      "homekit_set_ack_timeout_ms": 5000
+    }
+  ]
+}

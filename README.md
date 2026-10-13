@@ -14,7 +14,7 @@ Run your own scripts from Apple Home and Siri using Homebridge.
 
 **Updating from 1.0.0 or 1.0.1?** Version 1.0.2 includes the schema fix and development dependency maintenance. No configuration changes are required.
 
-[Quick start](#quick-start) · [Migration](#migration) · [Minimal configuration](#minimal-configuration) · [Settings reference](#settings-reference) · [Full example](#full-configuration-example) · [Advanced behavior](#advanced-behavior) · [FAQ](#troubleshooting-faq) · [Changelog](CHANGELOG.md)
+[Quick start](#quick-start) · [Migration](#migration) · [Minimal configuration](#minimal-configuration) · [User-provided scripts](#user-provided-scripts) · [Settings reference](#settings-reference) · [Full example](#full-configuration-example) · [Advanced behavior](#advanced-behavior) · [FAQ](#troubleshooting-faq) · [Changelog](CHANGELOG.md)
 
 ## What Script2 does
 
@@ -37,6 +37,10 @@ See [advanced behavior](#advanced-behavior) for execution details and [the featu
 Requires Node **22.13+ within Node 22, or Node 24**, and Homebridge **1.8+ within v1, or v2**. Commands run as the Homebridge service user and must not require a terminal or prompts.
 
 Make scripts executable and use absolute paths accessible to the Homebridge service user. If a command works in your terminal but fails in Homebridge, start with the [FAQ](#troubleshooting-faq).
+
+## User-provided scripts
+
+Optional scripts and setup examples are available in [userProvidedScripts](userProvidedScripts/), including a UniFi Vision Enhancer floodlight switch. These scripts are installed separately from the plugin.
 
 ## Migration
 
