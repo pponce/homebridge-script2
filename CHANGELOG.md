@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Treat ON/OFF and stateless trigger commands that exit `0` as successful when they write stderr, including switches using a state file (issue #125).
+- Log a warning when stderr is present and show bounded, escaped stderr text in Homebridge debug logs. Ordinary logs continue to omit script output.
+- Preserve action failures for nonzero exits and execution errors, and keep the configurable nonzero state-script policy from issue #29.
+
 ## 1.0.3 — 2026-09-11
 
 # ⚠️ **BREAKING CHANGE — BACK UP YOUR CONFIGURATION BEFORE UPDATING.**
@@ -86,3 +92,4 @@ Select **1.0.3** / **latest** in Homebridge UI and restart the instance or child
 
 - Added optional early HomeKit acknowledgement for long-running commands, serialized and coalesced SET requests, deferred state reads, and custom UI saving fixes.
 - See [published release notes](https://github.com/pponce/homebridge-script2/releases/tag/v0.4.6) for the original release history.
+

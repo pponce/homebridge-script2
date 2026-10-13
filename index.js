@@ -209,6 +209,17 @@ Script2DeviceLogic.prototype.formatCommandDiagnostics = function (action, comman
   return `${this.name}: ${action} command ${error?.killed ? "timed out or was terminated" : "failed"} (exit code: ${code}). Check the script as the Homebridge service user. Command text and output are omitted.`;
 };
 
+Script2DeviceLogic.prototype.logCommandStderr = function (action, stderr) {
+  const output = String(stderr ?? "").trim();
+  if (!output) return;
+  this.log.warn(`${this.name}: ${action} command wrote to stderr (enable Homebridge debug logging for details).`);
+  // Keep diagnostic output bounded and escape control characters so script output
+  // cannot insert terminal sequences or impersonate another log entry.
+  const limit = 4096;
+  const preview = JSON.stringify(output.slice(0, limit));
+  this.log.debug(`${this.name}: ${action} command stderr: ${preview}${output.length > limit ? " [truncated]" : ""}`);
+};
+
 Script2DeviceLogic.prototype.executeCommand = function (command, options, callback) {
   if (this.stopped) return;
   let child;
@@ -424,13 +435,13 @@ Script2DeviceLogic.prototype.startSetCommand = function (setRequest) {
 
     let callbackError = null;
 
-    if (error || stderr) {
+    this.logCommandStderr(action, stderr);
+    if (error) {
       const diagnostics = this.formatCommandDiagnostics(action, command, error, stdout, stderr);
       const errMessage = `Set State returned an error. ${diagnostics}`;
       this.log.error(`Set State returned an error: ${errMessage}`);
       callbackError = new Error(errMessage);
     } else {
-      const commandOutput = stdout.trim().toLowerCase();
       this.log.debug(`${this.name}: set command completed.`);
 
       this.currentState = powerOn;
@@ -627,9 +638,7 @@ Script2DeviceLogic.prototype.getState = function (
       const cleanCommandOutput = stdout.trim().toLowerCase();
       this.log.debug(`${this.name}: state command returned output.`);
 
-      if (stderr && stderr.trim().length > 0) {
-        this.log.warn(`${this.name}: state command wrote to stderr (output omitted).`);
-      }
+      this.logCommandStderr("state", stderr);
 
       if (!cleanCommandOutput) {
         const diagnostics = this.formatCommandDiagnostics("state", command, error, stdout, stderr);
@@ -684,7 +693,8 @@ Script2DeviceLogic.prototype.setStatelessTrigger = function (powerOn, callback) 
   this.commandExecutor(this.triggerCommand, { timeout: this.commandTimeout }, (error, stdout, stderr) => {
     this.triggerInFlight = false;
     const callbacks = this.triggerCallbacks.splice(0);
-    const failure = error || stderr ? new Error(this.formatCommandDiagnostics("trigger", this.triggerCommand, error)) : null;
+    this.logCommandStderr("trigger", stderr);
+    const failure = error ? new Error(this.formatCommandDiagnostics("trigger", this.triggerCommand, error)) : null;
     if (failure) this.log.error(failure.message);
     else this.log.info(`Triggered ${this.name} stateless action`);
     for (const cb of callbacks) cb(failure, failure ? null : powerOn);
@@ -782,3 +792,4 @@ Script2DeviceLogic.prototype.updateReachabilityFault = function (hasFault) {
 
 module.exports.Script2DeviceLogic = Script2DeviceLogic;
 module.exports.Script2Platform = Script2Platform;
+

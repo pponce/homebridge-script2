@@ -216,9 +216,11 @@ A state-read result uses this format:
 GetState <name>: ON/OFF (path: <request origin>, source: <state source>)
 ```
 
-The request origin is `homekit-get` or `polling`; the state source is `state-script`, `ttl-cache`, `in-flight-coalesced`, or `file-state`. Errors identify the accessory and action. Raw commands, stdout, and stderr are omitted from plugin diagnostics because scripts may contain credentials.
+The request origin is `homekit-get` or `polling`; the state source is `state-script`, `ttl-cache`, `in-flight-coalesced`, or `file-state`. Errors identify the accessory and action. Raw commands and stdout are omitted from plugin diagnostics. When a command writes nonblank stderr, Script2 logs a warning without its contents; enable Homebridge debug logging to see the stderr text, limited to 4,096 characters with control characters escaped. Debug stderr may contain credentials or other sensitive script output; remove secrets before sharing logs.
 
-Timeouts, terminated state commands, and output overflow are failures even if partial output was printed. For an ordinary nonzero state-command exit, `fail_on_state_exit_code` determines whether otherwise usable stdout can still determine state. ON/OFF and trigger commands retain their stderr-as-failure policy.
+ON/OFF and trigger commands succeed when they exit `0`, even if they write stderr. Nonzero exits, timeouts, termination, and other execution errors still fail. This applies to both command-based and file-based state; changing a state file does not override an action command failure.
+
+Timeouts, terminated state commands, and output overflow are failures even if partial output was printed. For an ordinary nonzero state-command exit, `fail_on_state_exit_code` determines whether otherwise usable stdout can still determine state. Its default is `false`: log the nonzero exit and use usable stdout; enable it to return the state-read error to HomeKit. This setting applies only to the state command, and stderr alone does not cause a state-read failure.
 
 ### Storage and shutdown
 
@@ -374,3 +376,4 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 ---
 
 Originally based on [homebridge-script](https://github.com/xxcombat/homebridge-script).
+
