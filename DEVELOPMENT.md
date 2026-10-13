@@ -1,5 +1,7 @@
 # Script2 development and release
 
+1.0.4 accepts exit-zero ON/OFF and stateless trigger commands that write stderr, warns in normal logs, and exposes bounded stderr text in Homebridge debug logs. The configurable nonzero state-script behavior is preserved. No configuration migration is needed from stable 1.0.x releases.
+
 1.0.2 includes Dependabot PR #123: the development-only fast-uri lockfile entry moves to 3.1.7. The 1.0.1 schema fix remains in place; runtime behavior and dependencies are unchanged.
 
 1.0.1 fixes configuration-schema metadata while preserving existing configurations. Runtime code and dependencies are unchanged from 1.0.0. Ajv is a pinned development dependency used to validate the schema against JSON Schema rules; it is not installed as a runtime dependency of the plugin. Publication does not imply Homebridge verification.
@@ -12,13 +14,15 @@ Run `python3 scripts/check-publisher.py beta` and `python3 scripts/check-publish
 
 Production versions are pinned in package-lock.json. npm ci validates the locked versions in GitHub Actions. The lock's integrity metadata can be refreshed with npm on a connected host. Live Homebridge behavior still depends on the maintainer's configured scripts and service environment.
 
-## Publish 1.0.2 from SSH
+## Publish 1.0.4 from SSH
 
 The local checkout is `~/devProjects/homebridge-script2`. The stable publisher requires `master` to match `origin/master`. GitHub account: `pponce`; npm account: `klidec`.
 
 Copy the complete contents of [scripts/update-and-publish-stable.txt](scripts/update-and-publish-stable.txt) into the SSH shell. It uses one outer brace block, a child Bash process, `set -e`, and beginning/end output markers. A failure stops the child process while leaving SSH open. Review the reported status before continuing.
 
-The helper refuses dirty/unexpected checkouts and existing versions/tags. It validates and packs a source snapshot, installs and tests the exact archive, then publishes `homebridge-script2@1.0.2` to npm `latest`. It creates a normal GitHub release marked latest from the exact source commit, using [releases/v1.0.2.md](releases/v1.0.2.md), with the archive and both final PNG icons attached.
+Merge PR #126 after its checks pass before using the repository's update wrapper. The complete release block supplied in the maintainer conversation includes that merge, pins the prepared PR head, and then runs the stable publisher.
+
+The helper refuses dirty/unexpected checkouts and existing versions/tags. It validates matching package/lockfile versions, a versioned changelog entry and release notes, packs a source snapshot, installs and tests the exact archive, then publishes `homebridge-script2@1.0.4` to npm `latest`. It creates a normal GitHub release marked latest from the exact source commit, using [releases/v1.0.4.md](releases/v1.0.4.md), with the archive and both final PNG icons attached. The publisher checks the official release body against the notes file and verifies npm's latest tag.
 
 Interactive commands reconnect to the controlling SSH terminal even though the outer wrapper reads commands from a heredoc. npm uses `--browser=false`: open the displayed authentication URL in your local browser and leave SSH running while npm waits. An existing npm login does not eliminate publish-time authentication. A failed attempt's URL should not be reused.
 
@@ -42,3 +46,4 @@ The older [beta publisher](scripts/publish-beta.sh) and [SSH wrapper](scripts/up
 - For early acknowledgement, verify a long-running success and late failure without duplicate commands.
 - Confirm shutdown/restart and room/scene/automation assignments.
 - Inspect the warning in Homebridge's Release Notes and Changelog tabs.
+

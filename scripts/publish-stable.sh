@@ -42,15 +42,16 @@ echo "Release work directory: $script2_work"
 git archive "$script2_source" | tar -x -C "$script2_work"
 git ls-remote --tags origin > "$script2_work/remote-tags.txt"
 cd "$script2_work"
-node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.3"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.3 stable metadata.");'
+node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.4"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.4 stable metadata.");'
 script2_version="$(node -p 'require("./package.json").version')"
 script2_tag="v$script2_version"
 script2_notes="releases/$script2_tag.md"
 test -s "$script2_notes"
+node -e 'const fs=require("fs"),p=require("./package.json"),lock=require("./package-lock.json");if(lock.version!==p.version||lock.packages[""].version!==p.version)throw Error("Package and lockfile versions differ.");if(!fs.readFileSync("CHANGELOG.md","utf8").includes(`## ${p.version} —`))throw Error("Versioned changelog entry is missing.");if(!fs.readFileSync(`releases/v${p.version}.md`,"utf8").startsWith(`# Script2 ${p.version}\n`))throw Error("Release notes version does not match.");'
 node -e 'const fs=require("fs"),p=require("./package.json");if(fs.readFileSync("remote-tags.txt","utf8").split("\n").some(l=>l.split(/\s+/)[1]===`refs/tags/v${p.version}`))throw Error("Tag already exists; it will not be moved.");'
 gh api "repos/$script2_repo/releases?per_page=100" --paginate --jq '.[].tag_name' > github-releases.txt
 node -e 'const fs=require("fs"),p=require("./package.json");if(fs.readFileSync("github-releases.txt","utf8").split("\n").includes(`v${p.version}`))throw Error("GitHub release already exists.");'
-npm view homebridge-script2 versions --json --registry="$script2_registry" > published-versions.json
+npm view homebridge-script2 versions --json --prefer-online --registry="$script2_registry" > published-versions.json
 node -e 'const p=require("./package.json"),v=require("./published-versions.json");if(!Array.isArray(v)||v.includes(p.version))throw Error("Version already published or unexpected registry response. Do not republish an existing version.");'
 npm view homebridge-script2 dist-tags.latest --registry="$script2_registry" > stable-before.txt
 
@@ -82,9 +83,23 @@ else
   echo 'Do not publish the same npm version again.'
   false
 fi
-npm view homebridge-script2 dist-tags --json --prefer-online --registry="$script2_registry" > stable-after.json
-node -e 'const fs=require("fs"); const tags=JSON.parse(fs.readFileSync("stable-after.json","utf8")); const expected=require("./package.json").version; if(tags.latest!==expected) throw Error(`Publication completed, but npm latest reports ${tags.latest}; expected ${expected}. Check dist-tags; do not republish.`);'
+gh api "repos/$script2_repo/releases/tags/$script2_tag" > github-release.json
+node -e 'const fs=require("fs"),p=require("./package.json"),r=require("./github-release.json"),notes=fs.readFileSync(`releases/v${p.version}.md`,"utf8");if(r.draft||r.prerelease||r.tag_name!==`v${p.version}`||r.body.trim()!==notes.trim())throw Error("GitHub release or release notes do not match the stable package.");'
+script2_latest=''
+for script2_attempt in {1..12}; do
+  script2_latest="$(npm view homebridge-script2 dist-tags.latest --prefer-online --registry="$script2_registry" 2>/dev/null || true)"
+  if [ "$script2_latest" = "$script2_version" ]; then break; fi
+  if [ "$script2_attempt" -lt 12 ]; then
+    echo 'Waiting for npm latest to reflect the new publication...'
+    sleep 5
+  fi
+done
+if [ "$script2_latest" != "$script2_version" ]; then
+  echo "STOP: publication completed, but npm latest reports $script2_latest; expected $script2_version. Check dist-tags; do not republish."
+  false
+fi
 echo "Stable release is ready: homebridge-script2@$script2_version (latest)."
 echo "GitHub: https://github.com/$script2_repo/releases/tag/$script2_tag"
 echo 'Homebridge review: https://github.com/homebridge/plugins/issues/new/choose'
 echo 'Install/update Script2 in Homebridge UI, then restart its instance or child bridge.'
+
