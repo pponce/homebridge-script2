@@ -15,8 +15,9 @@ if ! ( : </dev/tty ) 2>/dev/null; then
   false
 fi
 script2_interactive() { "$@" </dev/tty >/dev/tty; }
-for script2_tool in git node npm tar gh; do command -v "$script2_tool" >/dev/null; done
-cd "$(git rev-parse --show-toplevel)"
+for script2_tool in git node npm tar curl; do command -v "$script2_tool" >/dev/null; done
+script2_project_root="$(git rev-parse --show-toplevel)"
+cd "$script2_project_root"
 if [ "$(git branch --show-current)" != "$script2_branch" ]; then echo 'STOP: switch to master first.'; false; fi
 if [ -n "$(git status --porcelain)" ]; then echo 'STOP: commit or move local changes before publishing.'; false; fi
 case "$(git remote get-url origin)" in
@@ -24,6 +25,8 @@ case "$(git remote get-url origin)" in
   *) echo 'STOP: unexpected origin repository.'; false ;;
 esac
 git remote set-url origin git@github.com:pponce/homebridge-script2.git
+. "$script2_project_root/scripts/release-tools.sh"
+script2_setup_release_tools "$script2_project_root"
 git fetch origin "$script2_branch"
 script2_source="$(git rev-parse HEAD)"
 if [ "$script2_source" != "$(git rev-parse "origin/$script2_branch")" ]; then echo 'STOP: local branch must match its remote commit.'; false; fi
@@ -43,7 +46,8 @@ if [ "$script2_npm_user" != 'klidec' ]; then
 fi
 script2_npm_user="$(npm whoami --registry="$script2_registry")"
 if [ "$script2_npm_user" != 'klidec' ]; then echo 'STOP: npm account must be klidec.'; false; fi
-script2_work="$(mktemp -d "${TMPDIR:-/tmp}/script2-stable.XXXXXX")"
+mkdir -p "$script2_project_root/release-work/1.0.4"
+script2_work="$(mktemp -d "$script2_project_root/release-work/1.0.4/build-XXXXXX")"
 echo "Source commit: $script2_source"
 echo "Accounts verified: GitHub $script2_gh_user; npm $script2_npm_user"
 echo "Release work directory: $script2_work"

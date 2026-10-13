@@ -18,13 +18,15 @@ Production versions are pinned in package-lock.json. npm ci validates the locked
 
 The local checkout is `~/devProjects/homebridge-script2`. The stable publisher requires `master` to match `origin/master`. GitHub account: `pponce`; npm account: `klidec`.
 
-Copy the complete contents of [scripts/update-and-publish-stable.txt](scripts/update-and-publish-stable.txt) into the SSH shell. It uses one outer brace block, a child Bash process, `set -e`, and beginning/end output markers. A failure stops the child process while leaving SSH open. Review the reported status before continuing.
+Use the complete bootstrap block supplied in the maintainer conversation to fetch the prepared tools and [update wrapper](scripts/update-and-publish-stable.txt) over SSH into `release-work/bootstrap/`. It uses one outer brace block, a child Bash process, `set -e`, and beginning/end output markers. A failure stops the child process while leaving SSH open. Review the reported status before continuing.
 
-Merge PR #126 after its checks pass before using the repository's update wrapper. The complete release block supplied in the maintainer conversation includes that merge, pins the prepared PR head, and then runs the stable publisher.
+The complete release block supplied in the maintainer conversation fetches the prepared source over SSH, loads the release tools and update wrapper from that commit, waits for PR #126 checks, and merges the prepared head before publishing.
 
 The helper refuses dirty/unexpected checkouts and existing versions/tags. It validates matching package/lockfile versions, a versioned changelog entry and release notes, packs a source snapshot, installs and tests the exact archive, then publishes `homebridge-script2@1.0.4` to npm `latest`. It creates a normal GitHub release marked latest from the exact source commit, using [releases/v1.0.4.md](releases/v1.0.4.md), with the archive and both final PNG icons attached. The publisher checks the official release body against the notes file and verifies npm's latest tag.
 
 Git fetch/pull/tag operations use the repository's SSH remote. Creating the official GitHub release still requires GitHub API authentication: the publisher tests actual API access and starts the browser/device-code login when necessary, instead of relying only on `gh auth status`. Environment token overrides are cleared in the child shell; `GH_BROWSER=echo` displays the browser URL for manual opening.
+
+All release work is contained in `~/devProjects/homebridge-script2/release-work/`, which is ignored by Git. The tools helper downloads the official GitHub CLI 2.102.0 Linux archive into `release-work/tools/`, verifies its published SHA-256 digest, and selects that binary for this release process. Build snapshots, package archives, and test installs are under `release-work/1.0.4/`; npm's cache and subprocess temporary files are under `release-work/npm-cache/` and `release-work/tmp/`. Authentication uses the standard GitHub/npm credential settings.
 
 Interactive commands reconnect to the controlling SSH terminal even though the outer wrapper reads commands from a heredoc. npm uses `--browser=false` for login and publish: open the displayed authentication URL in your local browser and leave SSH running while npm waits. An existing npm login does not eliminate publish-time authentication. A failed attempt's URL should not be reused.
 
