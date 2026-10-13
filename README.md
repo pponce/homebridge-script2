@@ -20,13 +20,33 @@ Run your own scripts from Apple Home and Siri using Homebridge.
 
 ## What Script2 does
 
-- Run separate ON and OFF commands, and report device state from a command or a file.
-- Run one-shot actions with a stateless switch that resets its display automatically.
-- Adjust polling, caching, and timeouts to suit your scripts, including long-running actions.
-- Handle repeated HomeKit requests and command failures without unnecessarily launching the same action again.
+Script2 lets you control devices, run programs, and trigger custom workflows from **Apple Home, Siri, HomeKit scenes, and automations**.
 
-See [advanced behavior](#advanced-behavior) for execution details and [the feature comparison](VERIFICATION.md) for the Homebridge review rationale.
+It connects HomeKit switches to commands that run on your Homebridge machine. Those commands can launch shell scripts, Python or JavaScript scripts, command-line utilities such as `curl`, or **compiled programs—including your own C or C++ executables**.
 
+Your commands define what happens when a switch is activated. They can communicate with hardware, call an API, control another application, or perform a sequence of actions.
+
+### What you can use it for
+
+- **Control physical hardware:** operate Raspberry Pi relays, networked relay boards, lights, or other equipment using the appropriate scripts or programs.
+- **Connect to APIs and automation systems:** send HTTP requests, call webhooks, or trigger Node-RED flows.
+- **Run custom programs:** expose an existing command-line application or your own executable through HomeKit. For example, a custom C program can handle communication with a networked Modbus relay board while Script2 provides the HomeKit controls.
+- **Trigger individual tasks:** start a backup, refresh data, restart a device, or run a maintenance routine.
+- **Control workflows:** enable or pause an automation routine, or coordinate several devices through one command.
+- **Operate another computer:** use a configured SSH command to run an action remotely.
+
+### How it appears in Apple Home
+
+Script2 provides two types of switch:
+
+- **On/Off switches** run separate commands for each action and report their current state using a status command or the presence of a state file.
+- **Action switches** run a command when activated, then automatically reset their display. These suit tasks such as restarting a device or triggering a workflow.
+
+Polling, state caching, configurable timeouts, and command sequencing help these controls work reliably with HomeKit requests and longer-running operations.
+
+**Script2 provides the HomeKit interface; your scripts, programs, and command-line tools provide the device or application integration.** Commands run as the Homebridge service user and must work without interactive prompts.
+
+See [user-provided scripts and examples](userProvidedScripts/) for integrations you can adapt or contribute.
 
 ## Quick start
 
