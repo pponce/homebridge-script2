@@ -1,15 +1,10 @@
 {
-  echo '===== BEGIN SCRIPT2 1.0.4 — COPY OUTPUT FROM HERE ====='
+  echo '===== BEGIN SCRIPT2 1.0.5 — COPY OUTPUT FROM HERE ====='
   bash <<'SCRIPT2_STABLE'
 set -e
 set -o pipefail
-trap 'script2_status=$?; echo "===== END SCRIPT2 1.0.4 — STATUS $script2_status — COPY THROUGH HERE ====="' EXIT
-script2_repo='pponce/homebridge-script2'
-export GH_HOST=github.com
-unset GH_TOKEN GITHUB_TOKEN GH_PROMPT_DISABLED
-export GH_BROWSER=echo
+trap 'script2_status=$?; echo "===== END SCRIPT2 1.0.5 — STATUS $script2_status — COPY THROUGH HERE ====="' EXIT
 cd "$HOME/devProjects/homebridge-script2"
-for script2_tool in git node npm tar curl; do command -v "$script2_tool" >/dev/null; done
 if [ -n "$(git status --porcelain)" ]; then
   echo 'STOP: local changes found. Commit or move them before updating.'
   false
@@ -19,50 +14,19 @@ case "$(git remote get-url origin)" in
   *) echo 'STOP: unexpected origin repository.'; false ;;
 esac
 git remote set-url origin git@github.com:pponce/homebridge-script2.git
-script2_project_root="$(git rev-parse --show-toplevel)"
-. "${SCRIPT2_RELEASE_TOOLS:-$script2_project_root/scripts/release-tools.sh}"
-script2_setup_release_tools "$script2_project_root"
-script2_gh_user="$(gh api user --jq .login 2>/dev/null || true)"
-if [ "$script2_gh_user" != 'pponce' ]; then
-  echo 'Open the displayed GitHub URL and enter the displayed code. Sign in as pponce.'
-  gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key </dev/tty >/dev/tty
-fi
-if [ "$(gh api user --jq .login)" != 'pponce' ]; then echo 'STOP: GitHub account must be pponce.'; false; fi
-script2_head="${SCRIPT2_RELEASE_HEAD:-}"
-if [ -z "$script2_head" ]; then
-  git fetch origin fix/successful-command-stderr
-  script2_head="$(git rev-parse FETCH_HEAD)"
-fi
 git fetch origin master
 if git show-ref --verify --quiet refs/heads/master; then
   git switch master
 else
   git switch --track -c master origin/master
 fi
-git pull --ff-only origin master
-if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/master)" ]; then echo 'STOP: local master has unpublished commits.'; false; fi
-if [ "$(gh pr view 126 --repo "$script2_repo" --json headRefOid --jq .headRefOid)" != "$script2_head" ]; then
-  echo 'STOP: PR #126 changed since this release block was prepared.'
+git merge --ff-only origin/master
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/master)" ]; then
+  echo 'STOP: local master has unpublished commits.'
   false
 fi
-case "$(gh pr view 126 --repo "$script2_repo" --json state --jq .state)" in
-  OPEN)
-    gh pr checks 126 --repo "$script2_repo" --watch --fail-fast
-    if [ "$(gh pr view 126 --repo "$script2_repo" --json isDraft --jq .isDraft)" = 'true' ]; then
-      gh pr ready 126 --repo "$script2_repo"
-    fi
-    gh pr merge 126 --repo "$script2_repo" --merge --match-head-commit "$script2_head"
-    ;;
-  MERGED) echo 'PR #126 is already merged.' ;;
-  *) echo 'STOP: PR #126 is closed without merging.'; false ;;
-esac
-script2_merge="$(gh pr view 126 --repo "$script2_repo" --json mergeCommit --jq .mergeCommit.oid)"
-git fetch origin master
-git pull --ff-only origin master
-git merge-base --is-ancestor "$script2_merge" HEAD
-node -e 'if(require("./package.json").version!=="1.0.4")throw Error("Expected Script2 1.0.4.");'
+node -e 'if(require("./package.json").version!=="1.0.5")throw Error("Expected Script2 1.0.5.");'
 bash scripts/publish-stable.sh
 git fetch origin --tags
 SCRIPT2_STABLE
 }
-

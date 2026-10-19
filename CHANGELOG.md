@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.5 — 2026-10-18
+
+**Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
+
+### ⚠️ Upgrading from a version before 1.0.0
+
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
+
+### Donations and verification
+
+- Add optional PayPal donations through the Homebridge UI's **Donate** button.
+- Add PayPal to the GitHub repository's **Sponsor** button.
+- Include the **Verified by Homebridge** README badge following verification of Script2.
+
+This release changes donation metadata and documentation. Plugin behavior and configuration are unchanged.
+
+[Full 1.0.5 release notes](releases/v1.0.5.md)
+
 ## 1.0.4 — 2026-10-13
 
 **Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**

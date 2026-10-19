@@ -14,9 +14,9 @@ Run your own scripts from Apple Home and Siri using Homebridge.
 
 **Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
 
-**Stable release: 1.0.4.** Install the `latest` channel.
+**Stable release: 1.0.5.** Install the `latest` channel.
 
-**Updating from a stable 1.0.x release?** Version 1.0.4 accepts successful commands that write stderr and adds debug stderr details. No configuration changes are required.
+**Updating from a stable 1.0.x release?** Version 1.0.5 adds optional PayPal donation links and includes the Homebridge verified badge. No configuration changes are required.
 
 [Quick start](#quick-start) · [Migration](#migration) · [Minimal configuration](#minimal-configuration) · [User-provided scripts](#user-provided-scripts) · [Settings reference](#settings-reference) · [Full example](#full-configuration-example) · [Advanced behavior](#advanced-behavior) · [FAQ](#troubleshooting-faq) · [Changelog](CHANGELOG.md)
 
@@ -54,7 +54,7 @@ See [user-provided scripts and examples](userProvidedScripts/) for integrations 
 
 1. Save a Homebridge backup and your full config.json.
 2. Follow [Migration](#migration) if you use an older configuration.
-3. In Homebridge UI, install Script2 and select **1.0.4** / **latest** using the plugin version selector.
+3. In Homebridge UI, install Script2 and select **1.0.5** / **latest** using the plugin version selector.
 4. For a new setup, open Settings and add an **On/Off switch** or a **Stateless switch**. Enter your commands; On/Off switches also need a state command or state file. For an existing valid setup, keep your current entries.
 5. Review Advanced settings if needed, use Homebridge Save, then restart the instance or child bridge running Script2. Opening or saving settings never runs commands.
 

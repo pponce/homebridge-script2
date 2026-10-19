@@ -1,5 +1,7 @@
 # Script2 development and release
 
+1.0.5 adds PayPal funding metadata for GitHub and Homebridge UI following Homebridge verification. Runtime code and configuration are unchanged.
+
 1.0.4 accepts exit-zero ON/OFF and stateless trigger commands that write stderr, warns in normal logs, and exposes bounded stderr text in Homebridge debug logs. The configurable nonzero state-script behavior is preserved. No configuration migration is needed from stable 1.0.x releases.
 
 1.0.2 includes Dependabot PR #123: the development-only fast-uri lockfile entry moves to 3.1.7. The 1.0.1 schema fix remains in place; runtime behavior and dependencies are unchanged.
@@ -14,23 +16,25 @@ Run `python3 scripts/check-publisher.py beta` and `python3 scripts/check-publish
 
 Production versions are pinned in package-lock.json. npm ci validates the locked versions in GitHub Actions. The lock's integrity metadata can be refreshed with npm on a connected host. Live Homebridge behavior still depends on the maintainer's configured scripts and service environment.
 
-## Publish 1.0.4 from SSH
+## Publish 1.0.5 from SSH
 
-The local checkout is `~/devProjects/homebridge-script2`. The stable publisher requires `master` to match `origin/master`. GitHub account: `pponce`; npm account: `klidec`.
+The local checkout is `~/devProjects/homebridge-script2`. GitHub account: `pponce`; npm account: `klidec`.
 
-Use the complete bootstrap block supplied in the maintainer conversation to fetch the prepared tools and [update wrapper](scripts/update-and-publish-stable.txt) over SSH into `release-work/bootstrap/`. It uses one outer brace block, a child Bash process, `set -e`, and beginning/end output markers. A failure stops the child process while leaving SSH open. Review the reported status before continuing.
+After updating the checkout to `origin/master`, run `bash scripts/update-and-publish-stable.txt` from an interactive SSH terminal. The wrapper refuses dirty checkouts, updates `master` with a fast-forward, and invokes the stable publisher. It does not merge a pull request. A failure stops the child shell while leaving SSH open.
 
-The complete release block supplied in the maintainer conversation fetches the prepared source over SSH, loads the release tools and update wrapper from that commit, waits for PR #126 checks, and merges the prepared head before publishing.
+The publisher requires local `master` to match `origin/master` and refuses existing versions, tags, or releases. It validates matching package/lockfile versions, the changelog and release notes, runs the source, unit, installed-package and package-content checks, and tests the exact packed archive before publishing `homebridge-script2@1.0.5` to npm `latest`. It then creates the GitHub release from that exact source commit using [releases/v1.0.5.md](releases/v1.0.5.md), attaching the archive and both PNG icons.
 
-The helper refuses dirty/unexpected checkouts and existing versions/tags. It validates matching package/lockfile versions, a versioned changelog entry and release notes, packs a source snapshot, installs and tests the exact archive, then publishes `homebridge-script2@1.0.4` to npm `latest`. It creates a normal GitHub release marked latest from the exact source commit, using [releases/v1.0.4.md](releases/v1.0.4.md), with the archive and both final PNG icons attached. The publisher checks the official release body against the notes file and verifies npm's latest tag.
+Git operations use the repository's SSH remote. GitHub API authentication uses the GitHub CLI, and `GH_BROWSER=echo` displays its authentication URL. npm uses `--browser=false`: open the displayed authentication URL in your local browser and leave SSH running while npm waits. Interactive commands reconnect to the controlling terminal even when the wrapper reads commands from a heredoc.
 
-Git fetch/pull/tag operations use the repository's SSH remote. Creating the official GitHub release still requires GitHub API authentication: the publisher tests actual API access and starts the browser/device-code login when necessary, instead of relying only on `gh auth status`. Environment token overrides are cleared in the child shell; `GH_BROWSER=echo` displays the browser URL for manual opening.
+Release work stays inside the ignored `release-work/` directory. [release-tools.sh](scripts/release-tools.sh) supplies a checksum-verified GitHub CLI, npm cache and temporary directories. Authentication uses the standard GitHub/npm credential settings.
 
-All release work is contained in `~/devProjects/homebridge-script2/release-work/`, which is ignored by Git. The tools helper downloads the official GitHub CLI 2.102.0 Linux archive into `release-work/tools/`, verifies its published SHA-256 digest, and selects that binary for this release process. Build snapshots, package archives, and test installs are under `release-work/1.0.4/`; npm's cache and subprocess temporary files are under `release-work/npm-cache/` and `release-work/tmp/`. Authentication uses the standard GitHub/npm credential settings.
+If npm succeeds but GitHub fails, inspect for a partial release and use the printed GitHub-only recovery command if the release is absent. Never publish the same npm version again. The helper verifies the release body and npm's `latest` tag. It does not install the plugin into Homebridge.
 
-Interactive commands reconnect to the controlling SSH terminal even though the outer wrapper reads commands from a heredoc. npm uses `--browser=false` for login and publish: open the displayed authentication URL in your local browser and leave SSH running while npm waits. An existing npm login does not eliminate publish-time authentication. A failed attempt's URL should not be reused.
+## Donation links
 
-If npm succeeds but GitHub fails, inspect for a partial release and use the printed GitHub-only recovery command if the release is absent. Never publish the same npm version again. The helper does not install the plugin into the running Homebridge instance.
+`.github/FUNDING.yml` supplies the repository's Sponsor button. The `funding` metadata in `package.json` supplies the Donate button for the verified plugin in Homebridge UI and is also mirrored in the lockfile's root package. Changes to that metadata reach users through a new npm release.
+
+PayPal currently uses `https://paypal.me/pponcedeleon`. Once GitHub Sponsors approval is complete and the profile is live, add `github: pponce` to `.github/FUNDING.yml` and a second funding entry with type `github` and URL `https://github.com/sponsors/pponce` to the package metadata.
 
 ## Release warnings
 
