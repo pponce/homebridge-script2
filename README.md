@@ -4,6 +4,8 @@
 
 # homebridge-script2
 
+[![verified-by-homebridge](https://img.shields.io/badge/homebridge-verified-blueviolet?color=%23491F59&style=flat)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+
 Run your own scripts from Apple Home and Siri using Homebridge.
 
 **Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
@@ -12,7 +14,7 @@ Run your own scripts from Apple Home and Siri using Homebridge.
 
 **Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
 
-**Stable release: 1.0.4.** Install the `latest` channel. Homebridge verification is pending; this release does not claim certification.
+**Stable release: 1.0.4.** Install the `latest` channel.
 
 **Updating from a stable 1.0.x release?** Version 1.0.4 accepts successful commands that write stderr and adds debug stderr details. No configuration changes are required.
 
