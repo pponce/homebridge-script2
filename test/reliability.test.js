@@ -30,7 +30,7 @@ function apiHarness() {
 }
 test('only a dynamic platform is registered', () => {
   let count=0;
-  plugin({hap:{},registerAccessory(){throw new Error('legacy registration');},registerPlatform(p,n,ctor,dynamic){count++;assert.equal(n,'Script2Platform');assert.equal(dynamic,true);}});
+  plugin({hap:{},registerAccessory(){throw new Error('legacy registration');},registerPlatform(name,ctor){count++;assert.equal(name,'Script2Platform');assert.equal(ctor,Script2Platform);assert.equal(typeof ctor.prototype.configureAccessory,'function');}});
   assert.equal(count,1);
 });
 test('validation rejects legacy aliases, duplicates and malformed values before setup', () => {

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.6 — 2026-10-18
+
+**Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
+
+### ⚠️ Upgrading from a version before 1.0.0
+
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
+
+### Platform registration
+
+- Use Homebridge's supported two-argument platform registration API, following the optional suggestion in [the verification review](https://github.com/homebridge/plugins/issues/1218#issuecomment-6250513303).
+- Preserve the Script2 platform name, plugin identifier, accessory UUIDs, and command behavior.
+- Exercise the real Homebridge registration API in startup checks, including restoration of a cached accessory and creation of a new accessory.
+
+[Full 1.0.6 release notes](releases/v1.0.6.md)
+
 ## 1.0.5 — 2026-10-18
 
 **Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**

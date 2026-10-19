@@ -14,8 +14,8 @@ module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
 
-  // New dynamic platform mode (cached accessories + configureAccessory)
-  homebridge.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, Script2Platform, true);
+  // Homebridge identifies the plugin and detects dynamic platforms via configureAccessory.
+  homebridge.registerPlatform(PLATFORM_NAME, Script2Platform);
 };
 
 
