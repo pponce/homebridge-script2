@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.8 — 2026-10-21
+
+**Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
+
+### ⚠️ Upgrading from a version before 1.0.0
+
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
+
+### Checkbox visibility
+
+- Fix the debug checkbox appearing as a blank pill without a visible checked state under Homebridge's Bootstrap styling.
+- Remove text-field styling from checkbox inputs and render native square checkboxes beside clickable labels in light and dark themes.
+- Apply the correction to all boolean settings while preserving saved values and the 1.0.7 debug behavior.
+- Test visible checked/unchecked image differences with the host appearance reset, label and keyboard activation, and settings persistence.
+
+[Full 1.0.8 release notes](releases/v1.0.8.md)
+
 ## 1.0.7 — 2026-10-21
 
 **Users on version 1.0.x can update normally. No configuration migration is required. This also applies to 1.0.0-beta.1.**

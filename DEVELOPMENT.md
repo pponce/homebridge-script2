@@ -1,5 +1,7 @@
 # Script2 development and release
 
+1.0.8 separates native checkbox styling from Bootstrap text fields. The theme fixture now includes the host `appearance: none` reset, and browser checks verify visible checked/unchecked image differences as well as label/keyboard interaction and saved values.
+
 1.0.7 adds a platform-level `debug` opt-in, off by default, in both the custom UI and JSON schema. The platform logger gates every device logger while leaving Homebridge's own debug filter in control. State diagnostics distinguish exit codes, empty output, timeouts, and termination. Command outcomes and accessory identities are unchanged.
 
 1.0.6 uses the two-argument platform registration API. The installed-package smoke check uses the real Homebridge API to verify dynamic registration, cached accessory reuse, new accessory identity, and shutdown.
@@ -20,13 +22,13 @@ Run `python3 scripts/check-publisher.py beta` and `python3 scripts/check-publish
 
 Production versions are pinned in package-lock.json. npm ci validates the locked versions in GitHub Actions. The lock's integrity metadata can be refreshed with npm on a connected host. Live Homebridge behavior still depends on the maintainer's configured scripts and service environment.
 
-## Publish 1.0.7 from SSH
+## Publish 1.0.8 from SSH
 
 The local checkout is `~/devProjects/homebridge-script2`. GitHub account: `pponce`; npm account: `klidec`.
 
 After updating the checkout to `origin/master`, run `bash scripts/update-and-publish-stable.txt` from an interactive SSH terminal. The wrapper refuses dirty checkouts, updates `master` with a fast-forward, and invokes the stable publisher. It does not merge a pull request. A failure stops the child shell while leaving SSH open.
 
-The publisher requires local `master` to match `origin/master` and refuses existing versions, tags, or releases. It validates matching package/lockfile versions, the changelog and release notes, runs the source, unit, installed-package and package-content checks, and tests the exact packed archive before publishing `homebridge-script2@1.0.7` to npm `latest`. It then creates the GitHub release from that exact source commit using [releases/v1.0.7.md](releases/v1.0.7.md), attaching the archive and both PNG icons.
+The publisher requires local `master` to match `origin/master` and refuses existing versions, tags, or releases. It validates matching package/lockfile versions, the changelog and release notes, runs the source, unit, installed-package and package-content checks, and tests the exact packed archive before publishing `homebridge-script2@1.0.8` to npm `latest`. It then creates the GitHub release from that exact source commit using [releases/v1.0.8.md](releases/v1.0.8.md), attaching the archive and both PNG icons.
 
 Git operations use the repository's SSH remote. GitHub API authentication uses the GitHub CLI, and `GH_BROWSER=echo` displays its authentication URL. npm uses `--browser=false`: open the displayed authentication URL in your local browser and leave SSH running while npm waits. Interactive commands reconnect to the controlling terminal even when the wrapper reads commands from a heredoc.
 

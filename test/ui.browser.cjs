@@ -51,6 +51,43 @@ test('rapid edits during validation persist newest snapshot and preserve metadat
   const config={platform:'Script2Platform',name:'Script2',_bridge:{username:'AA:BB:CC:DD:EE:FF'},custom:'keep',on_off_switches:[{name:'Lamp',on:'on',off:'off',state:'state'}],stateless_switches:[]};
   const page=await pageWith([config],{delay:180});await page.getByText('Lamp',{exact:true}).click();await page.getByLabel('ON command',{exact:true}).fill('first');await page.waitForTimeout(220);await page.getByLabel('ON command',{exact:true}).fill('newest');await page.waitForFunction(()=>window._hb.enabled && window._hb.saved?.[0].on_off_switches[0].on==='newest');const saved=await page.evaluate(()=>window._hb.saved[0]);assert.equal(saved.custom,'keep');assert.equal(saved._bridge.username,config._bridge.username);await page.close();
 });
+test('checkboxes visibly change with host Bootstrap styles and support label and keyboard activation',async t=>{
+  const config={platform:'Script2Platform',name:'Script2',on_off_switches:[{name:'Lamp',on:'on',off:'off',state:'state'}],stateless_switches:[]};
+  const page=await pageWith([config]);
+  t.after(()=>page.close());
+  await page.addStyleTag({content:require('./theme-fixture.cjs').hostStyles});
+  await page.getByText('Lamp',{exact:true}).click();
+  await page.getByText('Advanced timing and behavior',{exact:true}).click();
+  const debug=page.getByRole('checkbox',{name:'Enable debug logging',exact:true});
+  for(const [classes,osTheme] of [
+    ['config-ui-x-blue modal-content','dark'],
+    ['config-ui-x-dark-mode-orange dark-mode modal-content','light'],
+    ['config-ui-x-dark-mode-blue modal-content','light'],
+    ['dark-mode modal-content','light'],
+  ]) {
+    await page.evaluate(value=>{document.body.className=value;},classes);
+    await page.emulateMedia({colorScheme:osTheme});
+    const controls=await page.getByRole('checkbox').evaluateAll(inputs=>inputs.map(input=>({appearance:getComputedStyle(input).appearance,width:input.getBoundingClientRect().width,height:input.getBoundingClientRect().height})));
+    assert.equal(controls.length,5);
+    for(const control of controls) {
+      assert.notEqual(control.appearance,'none',`Native checkmark hidden in ${classes}`);
+      assert.ok(control.width>=18&&control.height>=18,'Checkbox has a visible square target');
+    }
+    await debug.uncheck();await debug.focus();
+    const unchecked=await debug.screenshot({animations:'disabled'});
+    await debug.click();
+    assert.equal(await debug.isChecked(),true);
+    await page.waitForFunction(()=>window._hb.enabled&&window._hb.saved?.[0].debug===true);
+    const checked=await debug.screenshot({animations:'disabled'});
+    assert.notDeepEqual(checked,unchecked,`Click must visibly change the checkbox in ${classes}`);
+    await page.getByText('Enable debug logging',{exact:true}).click();
+    assert.equal(await debug.isChecked(),false);
+    await debug.focus();await debug.press('Space');
+    assert.equal(await debug.isChecked(),true);
+  }
+  await debug.uncheck();
+  await page.waitForFunction(()=>window._hb.enabled&&window._hb.saved?.[0].debug===false);
+});
 test('stateless trigger-on-Off and zero reset work on mobile without overflow',async()=>{
   const page=await pageWith([]);await page.setViewportSize({width:375,height:850});await page.getByRole('button',{name:'Add Stateless Switch',exact:true}).click();await page.getByLabel('Switch name',{exact:true}).fill('Reboot');await page.getByLabel('Trigger command',{exact:true}).fill('/opt/reboot');await page.getByLabel('Run command when',{exact:true}).selectOption('off');await page.getByLabel('Reset delay (seconds)',{exact:true}).fill('0');await page.waitForFunction(()=>window._hb.enabled);const saved=await page.evaluate(()=>window._hb.saved[0].stateless_switches[0]);assert.equal(saved.auto_reset_ms,0);assert.equal(saved.stateless_trigger_on,'off');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:path.join(__dirname,'../.test-artifacts/settings-mobile.png'),fullPage:true});await page.close();
 });

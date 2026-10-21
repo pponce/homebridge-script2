@@ -50,7 +50,8 @@ function field(parent, object, key, label, options = {}) {
   const wrapper = node('div', undefined, 'script2-field');
   const id = `script2-field-${++fieldId}`;
   const title = node('label', label); title.htmlFor = id;
-  const input = node(options.choices ? 'select' : 'input', undefined, options.choices ? 'form-select' : 'form-control');
+  const inputClass = options.choices ? 'form-select' : options.boolean ? 'script2-checkbox' : 'form-control';
+  const input = node(options.choices ? 'select' : 'input', undefined, inputClass);
   input.id = id;
   if (options.choices) for (const [value, text] of options.choices) { const option = node('option', text); option.value = value; input.append(option); }
   else input.type = options.boolean ? 'checkbox' : options.seconds ? 'number' : 'text';
@@ -66,7 +67,11 @@ function field(parent, object, key, label, options = {}) {
     else Script2ConfigUtils.setDeviceField(object, key, input.value);
     options.edit?.(); changed();
   });
-  wrapper.append(title, input);
+  if (options.boolean) {
+    const row = node('div', undefined, 'script2-checkbox-row');
+    row.append(input, title);
+    wrapper.append(row);
+  } else wrapper.append(title, input);
   if (options.help) { const help = node('small', options.help); help.id = `${id}-help`; input.setAttribute('aria-describedby', help.id); wrapper.append(help); }
   parent.append(wrapper);
   return { input, wrapper };

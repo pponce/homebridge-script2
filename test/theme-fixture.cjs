@@ -8,7 +8,7 @@ const hostStyles = `
 :root { --bs-body-color:#212529; --bs-border-color:#dee2e6; }
 body { color:#212529; background:#fff; font-family:Arial,sans-serif; }
 body.dark-mode, body[class*="config-ui-x-dark-mode"] { color:#fff; background:#242424; }
-.form-control, .form-select { color:#212529; background-color:#fff; border:1px solid #ced4da; border-radius:.25rem; padding:.375rem .75rem; }
+.form-control, .form-select { display:block; width:100%; appearance:none; color:#212529; background-color:#fff; border:1px solid #ced4da; border-radius:.25rem; padding:.375rem .75rem; }
 .form-control:disabled { background:#e9ecef; opacity:1; }
 .form-control::placeholder { color:#636363 !important; opacity:1 !important; }
 .btn { display:inline-block; padding:.375rem .75rem; border:1px solid transparent; border-radius:.25rem; }
@@ -88,4 +88,4 @@ async function checkThemeContrast(page, root, screenshot) {
   if (screenshot) await page.screenshot({ path: screenshot + '-night-mobile.png', fullPage: true });
   await page.setViewportSize(viewport);
 }
-module.exports = { checkThemeContrast };
+module.exports = { checkThemeContrast, hostStyles };
