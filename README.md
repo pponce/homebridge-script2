@@ -14,9 +14,9 @@ Run your own scripts from Apple Home and Siri using Homebridge.
 
 **Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
 
-**Stable release: 1.0.6.** Install the `latest` channel.
+**Stable release: 1.0.7.** Install the `latest` channel.
 
-**Updating from a stable 1.0.x release?** Version 1.0.6 includes a small Homebridge registration cleanup. No configuration changes are required.
+**Updating from a stable 1.0.x release?** Version 1.0.7 adds an optional debug logging checkbox and clearer command diagnostics. No migration is required. Script2 debug logging now defaults to off; enable it in plugin settings if you need troubleshooting details.
 
 [Quick start](#quick-start) · [Migration](#migration) · [Minimal configuration](#minimal-configuration) · [User-provided scripts](#user-provided-scripts) · [Settings reference](#settings-reference) · [Full example](#full-configuration-example) · [Advanced behavior](#advanced-behavior) · [FAQ](#troubleshooting-faq) · [Changelog](CHANGELOG.md)
 
@@ -54,7 +54,7 @@ See [user-provided scripts and examples](userProvidedScripts/) for integrations 
 
 1. Save a Homebridge backup and your full config.json.
 2. Follow [Migration](#migration) if you use an older configuration.
-3. In Homebridge UI, install Script2 and select **1.0.6** / **latest** using the plugin version selector.
+3. In Homebridge UI, install Script2 and select **1.0.7** / **latest** using the plugin version selector.
 4. For a new setup, open Settings and add an **On/Off switch** or a **Stateless switch**. Enter your commands; On/Off switches also need a state command or state file. For an existing valid setup, keep your current entries.
 5. Review Advanced settings if needed, use Homebridge Save, then restart the instance or child bridge running Script2. Opening or saving settings never runs commands.
 
@@ -105,6 +105,7 @@ For periodic updates when the device changes outside Apple Home, enable **Pollin
 | --- | --- | --- | --- |
 | `platform` | `"Script2Platform"` | yes | Platform identifier; keep this exact value |
 | `name` | string | no | Optional platform display name; individual switches still require names |
+| `debug` | boolean | no (default `false`) | Enable Script2 debug output; also requires Homebridge/child bridge debug mode (`-D`). Save and restart to apply |
 | `on_off_switches` | array | no | Main section for standard ON/OFF switches |
 | `stateless_switches` | array | no | Main section for one-shot trigger switches |
 
@@ -242,13 +243,25 @@ The `auto_reset_ms` delay starts when the command settles, including after a fai
 
 Successful ON/OFF and trigger completions are logged at **info** level. Routine successful reads, polling, and cache/shared-read messages are **debug** only. Acknowledgement and command completion are separate events.
 
+**Enable debug logging** is a platform-wide checkbox below **Platform name**, off by default. To see Script2 debug messages, enable both this checkbox and Homebridge or child bridge debug mode (`-D`), then save and restart the instance or child bridge running Script2. In JSON, set `"debug": true` on the `Script2Platform` block. You can leave `-D` enabled and turn Script2 debug logging off with the checkbox. Normal informational messages, warnings, and errors remain visible; Homebridge's own debug messages are controlled separately by `-D`.
+
+State-command debug summaries report the actual exit code and whether trimmed state output is present, for example:
+
+```text
+Lamp: state command finished (exit code: 0; state output: present).
+Lamp: state command finished (exit code: 2; state output: empty).
+Lamp: state command timed out (state output: empty).
+```
+
+These summaries do not print stdout or imply that a command succeeded. Timeouts and terminated commands are identified explicitly; unavailable exit codes are never reported as zero.
+
 A state-read result uses this format:
 
 ```text
 GetState <name>: ON/OFF (path: <request origin>, source: <state source>)
 ```
 
-The request origin is `homekit-get` or `polling`; the state source is `state-script`, `ttl-cache`, `in-flight-coalesced`, or `file-state`. Errors identify the accessory and action. Raw commands and stdout are omitted from plugin diagnostics. When a command writes nonblank stderr, Script2 logs a warning without its contents; enable Homebridge debug logging to see the stderr text, limited to 4,096 characters with control characters escaped. Debug stderr may contain credentials or other sensitive script output; remove secrets before sharing logs.
+The request origin is `homekit-get` or `polling`; the state source is `state-script`, `ttl-cache`, `in-flight-coalesced`, or `file-state`. Errors identify the accessory and action. Raw commands and stdout are omitted from plugin diagnostics. When a command writes nonblank stderr, Script2 logs a warning without its contents; enable Script2 debug logging and Homebridge/child bridge debug mode (`-D`) to see the stderr text, limited to 4,096 characters with control characters escaped. Debug stderr may contain credentials or other sensitive script output; remove secrets before sharing logs.
 
 ON/OFF and trigger commands succeed when they exit `0`, even if they write stderr. Nonzero exits, timeouts, termination, and other execution errors still fail. This applies to both command-based and file-based state; changing a state file does not override an action command failure.
 

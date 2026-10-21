@@ -20,6 +20,12 @@
         "default": "Script2",
         "description": "Display name for this platform instance in Homebridge."
       },
+      "debug": {
+        "title": "Enable debug logging",
+        "type": "boolean",
+        "default": false,
+        "description": "Show detailed Script2 troubleshooting messages. Requires Homebridge or child bridge debug mode (-D). Save and restart the Homebridge instance or child bridge running Script2 to apply."
+      },
       "on_off_switches": {
         "title": "On/Off Switches",
         "type": "array",

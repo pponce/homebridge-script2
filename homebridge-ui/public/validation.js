@@ -13,6 +13,7 @@
     if (config.platform !== 'Script2Platform') errors.push('Use platform: Script2Platform.');
     for (const key of legacyKeys) if (Object.hasOwn(config, key)) errors.push(`Legacy ${key} is no longer supported. Back up config.json and follow README Migration before saving.`);
     if (config.name !== undefined && (typeof config.name !== 'string' || !config.name.trim())) errors.push('Platform name must be a nonblank string.');
+    if (config.debug !== undefined && typeof config.debug !== 'boolean') errors.push('Enable debug logging (debug) must be true or false.');
     const names = new Set();
     for (const list of ['on_off_switches', 'stateless_switches']) {
       if (config[list] === undefined) continue;

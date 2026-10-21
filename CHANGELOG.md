@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.7 — 2026-10-21
+
+**Users on version 1.0.x can update normally. No configuration migration is required. This also applies to 1.0.0-beta.1.**
+
+**Script2 debug logging now defaults to off.** Enable the new **Enable debug logging** checkbox as well as Homebridge/child bridge debug mode (`-D`) to see Script2 troubleshooting details.
+
+### ⚠️ Upgrading from a version before 1.0.0
+
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
+
+### Debug control and accurate diagnostics
+
+- Add a platform-wide **Enable debug logging** checkbox below **Platform name**, off by default. Save and restart the instance or child bridge to apply it.
+- Allow `-D` to stay enabled while Script2 debug output is suppressed. Normal informational messages, warnings, and errors remain visible.
+- Replace the unconditional `state command returned output` message with the actual exit code and whether trimmed state output is present or empty.
+- Identify timeouts and termination explicitly. Explain discarded partial output without incorrectly claiming that strict nonzero-exit handling is enabled.
+- Point stderr warnings to both required debug settings. Continue omitting raw command text and stdout.
+- Cover debug gating, settings persistence, empty output, failure diagnostics, and real command timeouts in regression checks.
+
+Command behavior, accessory identities, and the configurable nonzero state-exit policy are unchanged.
+
+[Full 1.0.7 release notes](releases/v1.0.7.md)
+
 ## 1.0.6 — 2026-10-18
 
 **Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**

@@ -144,6 +144,7 @@ async function initialize() {
     config = clone(blocks[index]);
     for (const key of ['on_off_switches','stateless_switches']) { if (config[key] === undefined) config[key] = []; if (!Array.isArray(config[key]) || config[key].some(d => !d || typeof d !== 'object' || Array.isArray(d))) throw new Error('Invalid device list. Correct the JSON configuration; no settings have been changed.'); }
     field(document.getElementById('platform'), config, 'name', 'Platform name', { default:'Script2', required:true });
+    field(document.getElementById('platform'), config, 'debug', 'Enable debug logging', { boolean:true, default:false, help:'Show detailed Script2 troubleshooting messages. Requires Homebridge or child bridge debug mode (-D). Save and restart the Homebridge instance or child bridge running Script2 to apply.' });
     for (const [id,key] of [['add-stateful','on_off_switches'],['add-stateless','stateless_switches']]) document.getElementById(id).addEventListener('click', () => { config[key].push({}); render(); changed(); document.getElementById('devices').querySelector('details[open] input')?.focus(); });
     form.hidden = false;
     render(); changed();

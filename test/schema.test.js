@@ -53,3 +53,12 @@ test('platform identity and existing device requirements remain enforced', () =>
     assert.equal(validateRuntime(config).valid, false);
   }
 });
+
+test('schema and runtime accept only booleans for the optional platform debug setting', () => {
+  const validateSchema = compileSchema();
+  for (const debug of [true, false, 'true', 'false', 1, 0, null]) {
+    const config = { platform: 'Script2Platform', debug };
+    assert.equal(validateSchema(config), typeof debug === 'boolean');
+    assert.equal(validateRuntime(config).valid, typeof debug === 'boolean');
+  }
+});

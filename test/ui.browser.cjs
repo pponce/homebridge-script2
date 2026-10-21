@@ -31,6 +31,22 @@ test('fresh setup, seconds conversion, booleans and Save round-trip',async()=>{
 test('legacy and failed loads do not overwrite configuration',async()=>{
   for(const [blocks,options] of [[[{platform:'Script2Platform',devices:[]}],{}],[[],{loadFail:true}]]){const page=await pageWith(blocks,options);await page.waitForTimeout(250);assert.equal(await page.evaluate(()=>window._hb.enabled),false);assert.equal(await page.evaluate(()=>window._hb.writes.length),0);assert.equal(await page.locator('#settings').isVisible(),false);await page.close();}
 });
+test('platform debug defaults off and round-trips without changing child bridge metadata or devices',async()=>{
+  const config={platform:'Script2Platform',name:'Script2',_bridge:{username:'AA:BB:CC:DD:EE:FF',port:51234},on_off_switches:[{name:'Lamp',on:'on',off:'off',state:'state'}],stateless_switches:[]};
+  const page=await pageWith([config]);
+  await page.waitForFunction(()=>window._hb.enabled);
+  assert.equal(await page.getByLabel('Enable debug logging',{exact:true}).isChecked(),false);
+  await page.getByLabel('Enable debug logging',{exact:true}).check();
+  await page.waitForFunction(()=>window._hb.enabled&&window._hb.saved?.[0].debug===true);
+  const saved=await page.evaluate(()=>window._hb.saved);
+  assert.deepEqual(saved[0]._bridge,config._bridge);
+  assert.deepEqual(saved[0].on_off_switches,config.on_off_switches);
+  const reopened=await pageWith(saved);
+  assert.equal(await reopened.getByLabel('Enable debug logging',{exact:true}).isChecked(),true);
+  await reopened.getByLabel('Enable debug logging',{exact:true}).uncheck();
+  await reopened.waitForFunction(()=>window._hb.enabled&&window._hb.saved?.[0].debug===false);
+  await page.close();await reopened.close();
+});
 test('rapid edits during validation persist newest snapshot and preserve metadata',async()=>{
   const config={platform:'Script2Platform',name:'Script2',_bridge:{username:'AA:BB:CC:DD:EE:FF'},custom:'keep',on_off_switches:[{name:'Lamp',on:'on',off:'off',state:'state'}],stateless_switches:[]};
   const page=await pageWith([config],{delay:180});await page.getByText('Lamp',{exact:true}).click();await page.getByLabel('ON command',{exact:true}).fill('first');await page.waitForTimeout(220);await page.getByLabel('ON command',{exact:true}).fill('newest');await page.waitForFunction(()=>window._hb.enabled && window._hb.saved?.[0].on_off_switches[0].on==='newest');const saved=await page.evaluate(()=>window._hb.saved[0]);assert.equal(saved.custom,'keep');assert.equal(saved._bridge.username,config._bridge.username);await page.close();

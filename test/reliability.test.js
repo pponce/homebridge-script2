@@ -50,6 +50,35 @@ test('canonical platform preserves UUID and explicit empty lists remove only its
   assert.equal(api.created.length,0);assert.equal(p.accessories.get(cached.UUID),cached);
   p.config.on_off_switches=[];p.discoverDevices();assert.deepEqual(api.removed,[cached]);
 });
+test('platform debug requires both plugin opt-in and Homebridge debug, preserving normal logs', t => {
+  for (const debug of [undefined, false, true]) {
+    for (const homebridgeDebug of [false, true]) {
+      const {api}=apiHarness();
+      const logs=[];
+      const log=Object.fromEntries(['debug','info','warn','error'].map(level=>[level,message=>{
+        if(level!=='debug'||homebridgeDebug) logs.push([level,message]);
+      }]));
+      const config={platform:'Script2Platform',on_off_switches:[valid],stateless_switches:[{name:'Run',trigger:'trigger'}]};
+      if(debug!==undefined) config.debug=debug;
+      const platform=new Script2Platform(log,config,api);
+      t.after(()=>api.emit('shutdown'));
+      api.emit('didFinishLaunching');
+      const logic=platform.instances.get('homebridge-script2:Lamp');
+      let calls=0;
+      logic.rawExecutor=(command,options,done)=>{ calls++; done(command==='off'?Object.assign(new Error('failure'),{code:2}):null,'true','private diagnostic'); };
+      logic.getState((error,value)=>{assert.equal(error,null);assert.equal(value,true);});
+      logic.setState(true,error=>assert.equal(error,null));
+      logic.setState(false,error=>assert.ok(error));
+      const trigger=platform.instances.get('homebridge-script2:Run');
+      trigger.rawExecutor=(command,options,done)=>{ calls++; done(null,'','private diagnostic'); };
+      trigger.setStatelessTrigger(true,error=>assert.equal(error,null));
+      assert.equal(calls,4);
+      assert.equal(logs.some(([level])=>level==='debug'),debug===true&&homebridgeDebug);
+      assert.equal(JSON.stringify(logs).includes('private diagnostic'),debug===true&&homebridgeDebug);
+      for(const level of ['info','warn','error']) assert.ok(logs.some(([actual])=>actual===level));
+    }
+  }
+});
 test('partial setup failure stops created instances and preserves cached accessories', () => {
   const {api,log}=apiHarness();const p=new Script2Platform(log,{platform:'Script2Platform',on_off_switches:[valid,{...valid,name:'Second'}]},api);
   let count=0;api.registerPlatformAccessories=()=>{if(++count===2)throw new Error('failure');};
@@ -95,7 +124,10 @@ test('normal command diagnostics and failing loggers do not leak or replay comma
   const d=new Script2DeviceLogic(bad,valid,(c,o,cb)=>cb(null,'',''));d.setState(true,()=>done++);assert.equal(done,1);
 });
 test('real external process deadline is bounded and does not use partial output', async () => {
-  const {logic}=harness({command_timeout:100,state:`"${process.execPath}" -e "console.log('true');setTimeout(()=>{},10000)"`},require('node:child_process').exec);
+  const {logic,logs}=harness({command_timeout:100,state:`"${process.execPath}" -e "console.log('true');setTimeout(()=>{},10000)"`},require('node:child_process').exec);
   const error=await new Promise(resolve=>logic.getState(resolve));assert.ok(error);assert.equal(logic.lastStateRead,null);logic.shutdown();
+  assert.match(error.message,/state command timed out/);
+  assert.ok(logs.some(([level,message])=>level==='debug'&&message.includes('state command timed out (state output:')));
+  assert.doesNotMatch(JSON.stringify(logs),/exit code: 0|fail_on_state_exit_code is enabled/);
 });
 

@@ -55,7 +55,7 @@ function getConfiguredDevices(config) {
 
 class Script2Platform {
   constructor(log, config, api) {
-    this.log = safeLogger(log);
+    this.log = safeLogger(log, { debugEnabled: config?.debug === true });
     this.config = config;
     this.api = api;
     this.accessories = new Map();
@@ -206,13 +206,14 @@ function Script2DeviceLogic(log, config, commandExecutor = exec) {
 
 Script2DeviceLogic.prototype.formatCommandDiagnostics = function (action, command, error) {
   const code = typeof error?.code === "number" ? error.code : "unavailable";
-  return `${this.name}: ${action} command ${error?.killed ? "timed out or was terminated" : "failed"} (exit code: ${code}). Check the script as the Homebridge service user. Command text and output are omitted.`;
+  const outcome = error?.timedOut ? "timed out" : error?.killed || error?.signal ? "was terminated" : "failed";
+  return `${this.name}: ${action} command ${outcome} (exit code: ${code}). Check the script as the Homebridge service user. Command text and output are omitted.`;
 };
 
 Script2DeviceLogic.prototype.logCommandStderr = function (action, stderr) {
   const output = String(stderr ?? "").trim();
   if (!output) return;
-  this.log.warn(`${this.name}: ${action} command wrote to stderr (enable Homebridge debug logging for details).`);
+  this.log.warn(`${this.name}: ${action} command wrote to stderr. Enable Script2 debug logging and Homebridge/child bridge debug mode (-D) for details.`);
   // Keep diagnostic output bounded and escape control characters so script output
   // cannot insert terminal sequences or impersonate another log entry.
   const limit = 4096;
@@ -241,7 +242,7 @@ Script2DeviceLogic.prototype.executeCommand = function (command, options, callba
   try {
     deadline = setTimeout(() => {
       try { child?.kill("SIGKILL"); } catch { this.log.warn(`${this.name}: timed-out process could not be stopped.`); }
-      finish(Object.assign(new Error("Command deadline exceeded."), { killed: true }));
+      finish(Object.assign(new Error("Command deadline exceeded."), { killed: true, timedOut: true }));
     }, options.timeout);
     this.deadlines.add(deadline);
     deadline.unref?.();
@@ -636,7 +637,10 @@ Script2DeviceLogic.prototype.getState = function (
 
       const pendingCallbacks = stateRequest.requests.map((request) => request.callback);
       const cleanCommandOutput = stdout.trim().toLowerCase();
-      this.log.debug(`${this.name}: state command returned output.`);
+      const outcome = error?.timedOut ? "timed out" : error?.killed || error?.signal ? "was terminated" : "finished";
+      const code = error ? (typeof error.code === "number" ? error.code : "unavailable") : 0;
+      const exitDetail = outcome === "finished" ? `exit code: ${code}; ` : "";
+      this.log.debug(`${this.name}: state command ${outcome} (${exitDetail}state output: ${cleanCommandOutput ? "present" : "empty"}).`);
 
       this.logCommandStderr("state", stderr);
 
@@ -655,7 +659,10 @@ Script2DeviceLogic.prototype.getState = function (
       if (error) {
         if (this.failOnStateExitCode || error.killed || error.signal || error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
           const diagnostics = this.formatCommandDiagnostics("state", command, error, stdout, stderr);
-          const errMessage = `Get State command exited non-zero and fail_on_state_exit_code is enabled. ${diagnostics}`;
+          const reason = error.killed || error.signal || error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"
+            ? "Get State command did not complete normally; partial output will not be used."
+            : "Get State command exited non-zero and fail_on_state_exit_code is enabled.";
+          const errMessage = `${reason} ${diagnostics}`;
           this.log.error(errMessage);
           this.updateReachabilityFault(true);
           pendingCallbacks.forEach((cb) => cb(new Error(errMessage), null));

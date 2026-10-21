@@ -101,6 +101,24 @@ test('blank stderr produces no warning or stderr debug entry', t => {
   assert.ok(!logs.some(([level, message]) => level === 'warn' || message.includes('stderr')));
 });
 
+test('state summaries distinguish empty output, nonzero exits and termination without exposing stdout', t => {
+  for (const [error, stdout, expected] of [
+    [null, 'true', 'finished (exit code: 0; state output: present)'],
+    [null, ' \n\t', 'finished (exit code: 0; state output: empty)'],
+    [{code:2}, '', 'finished (exit code: 2; state output: empty)'],
+    [{code:2}, 'private-stdout', 'finished (exit code: 2; state output: present)'],
+    [{code:'ENOENT'}, '', 'finished (exit code: unavailable; state output: empty)'],
+    [{signal:'SIGTERM'}, 'true', 'was terminated (state output: present)'],
+  ]) {
+    const {logic,commands,logs}=harness(t,{},true);
+    logic.getState(()=>{});
+    commands[0].callback(error?Object.assign(new Error('failure'),error):null,stdout,'');
+    assert.ok(logs.some(([level,message])=>level==='debug'&&message===`Lamp: state command ${expected}.`));
+    assert.doesNotMatch(JSON.stringify(logs),/private-stdout|state command returned output/);
+    if(error?.signal) assert.doesNotMatch(JSON.stringify(logs),/timed out|fail_on_state_exit_code is enabled/);
+  }
+});
+
 for (const failure of [
   { code: 1 }, { killed: true }, { signal: 'SIGTERM' }, { code: 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' },
 ]) {

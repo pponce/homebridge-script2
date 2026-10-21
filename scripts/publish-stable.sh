@@ -46,15 +46,15 @@ if [ "$script2_npm_user" != 'klidec' ]; then
 fi
 script2_npm_user="$(npm whoami --registry="$script2_registry")"
 if [ "$script2_npm_user" != 'klidec' ]; then echo 'STOP: npm account must be klidec.'; false; fi
-mkdir -p "$script2_project_root/release-work/1.0.6"
-script2_work="$(mktemp -d "$script2_project_root/release-work/1.0.6/build-XXXXXX")"
+mkdir -p "$script2_project_root/release-work/1.0.7"
+script2_work="$(mktemp -d "$script2_project_root/release-work/1.0.7/build-XXXXXX")"
 echo "Source commit: $script2_source"
 echo "Accounts verified: GitHub $script2_gh_user; npm $script2_npm_user"
 echo "Release work directory: $script2_work"
 git archive "$script2_source" | tar -x -C "$script2_work"
 git ls-remote --tags origin > "$script2_work/remote-tags.txt"
 cd "$script2_work"
-node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.6"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.6 stable metadata.");'
+node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.7"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.7 stable metadata.");'
 script2_version="$(node -p 'require("./package.json").version')"
 script2_tag="v$script2_version"
 script2_notes="releases/$script2_tag.md"
