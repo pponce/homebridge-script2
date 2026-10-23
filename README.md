@@ -3,6 +3,9 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/homebridge/homebridge/wiki/Verified-Plugins">
+    <img src="https://img.shields.io/badge/homebridge-verified-blueviolet?color=%23491F59&amp;style=flat" alt="Verified by Homebridge">
+  </a>
   <a href="https://github.com/sponsors/pponce">
     <img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=githubsponsors&amp;logoColor=white" alt="Sponsor on GitHub">
   </a>
@@ -12,8 +15,6 @@
 </p>
 
 # homebridge-script2
-
-[![verified-by-homebridge](https://img.shields.io/badge/homebridge-verified-blueviolet?color=%23491F59&style=flat)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
 Run your own scripts from Apple Home and Siri using Homebridge.
 
