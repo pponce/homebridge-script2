@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.9 — 2026-10-23
+
+**Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
+
+### ⚠️ Upgrading from a version before 1.0.0
+
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
+
+
+### Sponsorship options
+
+- Add [GitHub Sponsors](https://github.com/sponsors/pponce) alongside [PayPal](https://paypal.me/pponcedeleon) in the package funding metadata used by Homebridge UI's donation heart.
+- Offer both options from the GitHub repository's **Sponsor** button.
+- Add GitHub Sponsors and PayPal badges directly below the README logo.
+
+This release changes funding metadata and documentation. Plugin behavior and configuration are unchanged.
+
+[Full 1.0.9 release notes](releases/v1.0.9.md)
+
 ## 1.0.8 — 2026-10-21
 
 **Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
