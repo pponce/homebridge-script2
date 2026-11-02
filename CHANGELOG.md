@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.10 — 2026-11-02
+
+**Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
+
+### ⚠️ Upgrading from a version before 1.0.0
+
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
+
+### Dependency maintenance
+
+- Update the development-only `fast-uri` lockfile entry from 3.1.7 to 3.1.9 through Dependabot PR [#128](https://github.com/pponce/homebridge-script2/pull/128), incorporating upstream URI parsing and normalization security fixes.
+- `fast-uri` is used by Ajv for development-time configuration-schema checks. It is not installed as a runtime dependency of Script2.
+- Include the README layout with the Homebridge verified badge beside the donation badges below the logo.
+
+Plugin behavior, runtime dependencies, and configuration are unchanged.
+
+[Full 1.0.10 release notes](releases/v1.0.10.md)
+
 ## 1.0.9 — 2026-10-23
 
 **Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
