@@ -1,5 +1,5 @@
 {
-  printf '\n===== START: SCRIPT2 1.0.10 RELEASE =====\n'
+  printf '\n===== START: SCRIPT2 1.0.11 RELEASE =====\n'
   if bash <<'SCRIPT2_RELEASE'
 script2_update_and_publish() {
   cd "$HOME/devProjects/homebridge-script2" || return
@@ -27,16 +27,17 @@ script2_update_and_publish() {
     printf '%s\n' 'STOP: local master has unpublished commits.'
     return 1
   fi
-  node -e 'if(require("./package.json").version!=="1.0.10")throw Error("Expected Script2 1.0.10.");' || return
+  node -e 'if(require("./package.json").version!=="1.0.11")throw Error("Expected Script2 1.0.11.");' || return
   bash scripts/publish-stable.sh || return
   git fetch origin --tags || return
 }
 script2_update_and_publish
 SCRIPT2_RELEASE
   then
-    printf '\n===== END: SCRIPT2 1.0.10 RELEASE — SUCCESS =====\n'
+    printf '\n===== END: SCRIPT2 1.0.11 RELEASE — SUCCESS =====\n'
   else
     script2_release_status=$?
-    printf '\n===== END: SCRIPT2 1.0.10 RELEASE — FAILED (status %s) =====\n' "$script2_release_status"
+    printf '\n===== END: SCRIPT2 1.0.11 RELEASE — FAILED (status %s) =====\n' "$script2_release_status"
   fi
 }
+

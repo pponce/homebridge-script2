@@ -18,25 +18,27 @@
 
 ## Validate
 
-Run `npm ci --include=dev --ignore-scripts`, `npm run check`, `npm test`, `npm run test:installed`, and `npm run check:package`. Browser checks use `npm run test:ui` with Playwright available through `SCRIPT2_BROWSER_MODULES` or normal local node_modules. CI installs its own pinned Playwright and Chromium, tests Node 22/24 with Homebridge 1/2, and installs the exact packed archive.
+Run `npm ci --include=dev --ignore-scripts`, `npm run check`, `npm test`, `npm run test:installed`, and `npm run check:package`. Browser checks use `npm run test:ui` with Playwright available through `SCRIPT2_BROWSER_MODULES` or normal local node_modules. CI installs its own pinned Playwright and Chromium, tests Node 22/24/26 with Homebridge 1/2, and installs the exact packed archive.
 
 Run `python3 scripts/check-publisher.py beta` and `python3 scripts/check-publisher.py stable` to verify that both publishers reconnect terminal input/output under the SSH heredoc wrapper. These checks use a simulated npm command and never authenticate or publish.
 
 Production versions are pinned in package-lock.json. npm ci validates the locked versions in GitHub Actions. The lock's integrity metadata can be refreshed with npm on a connected host. Live Homebridge behavior still depends on the maintainer's configured scripts and service environment.
 
-## Publish 1.0.10 from SSH
+## Stable releases
 
-The local checkout is `~/devProjects/homebridge-script2`. GitHub account: `pponce`; npm account: `klidec`.
+Set matching stable versions in package.json and package-lock.json, add the changelog entry and `releases/vVERSION.md`, and push a commit titled `release: VERSION - DESCRIPTION` to master. The release job runs only after every package matrix job and browser check passes. It creates the GitHub release at that exact commit and attaches the npm archive and both PNG icons. It never publishes to npm. Existing releases are left unchanged; existing tags without releases require inspection.
 
-After updating the checkout to `origin/master`, run `bash scripts/update-and-publish-stable.txt` from an interactive SSH terminal. The wrapper refuses dirty checkouts, updates `master` with a fast-forward, and invokes the stable publisher. It does not merge a pull request. A failure stops the child shell while leaving SSH open.
+## Publish 1.0.11 to npm from SSH
 
-The publisher requires local `master` to match `origin/master` and refuses existing versions, tags, or releases. It validates matching package/lockfile versions, the changelog and release notes, runs the source, unit, installed-package and package-content checks, and tests the exact packed archive before publishing `homebridge-script2@1.0.10` to npm `latest`. It then creates the GitHub release from that exact source commit using [releases/v1.0.10.md](releases/v1.0.10.md), attaching the archive and both PNG icons.
+Run `bash scripts/update-and-publish-stable.txt` from an interactive SSH terminal with the checkout at `~/devProjects/homebridge-script2`. The wrapper requires a clean checkout, updates master with a fast-forward, and invokes the stable publisher. Failures leave the SSH session open.
 
-Git operations use the repository's SSH remote. GitHub API authentication uses the GitHub CLI, and `GH_BROWSER=echo` displays its authentication URL. npm uses `--browser=false`: open the displayed authentication URL in your local browser and leave SSH running while npm waits. Interactive commands reconnect to the controlling terminal even when the wrapper reads commands from a heredoc.
+The publisher requires the local source, origin/master, and release tag to match. It validates the official GitHub release, release notes, package metadata, and npm version availability. It runs source, unit, installed-package, and package-content checks, then downloads the release archive and verifies its SHA-256 digest before testing and publishing that exact archive to npm under `latest`.
 
-Release work stays inside the ignored `release-work/` directory. [release-tools.sh](scripts/release-tools.sh) supplies a checksum-verified GitHub CLI, npm cache and temporary directories. Authentication uses the standard GitHub/npm credential settings.
+GitHub authentication must use the repository owner account; npm authentication must use the configured package maintainer account. Open any displayed browser authentication URL on your local computer and leave SSH running. Interactive commands reconnect to the controlling terminal even when the wrapper reads commands from a heredoc.
 
-If npm succeeds but GitHub fails, inspect for a partial release and use the printed GitHub-only recovery command if the release is absent. Never publish the same npm version again. The helper verifies the release body and npm's `latest` tag. It does not install the plugin into Homebridge.
+Release work stays inside the ignored `release-work/` directory. [release-tools.sh](scripts/release-tools.sh) supplies a checksum-verified GitHub CLI, npm cache, and temporary directories. Authentication uses the standard GitHub/npm credential settings.
+
+If npm publication succeeds but verification fails, inspect npm's published version and `latest` tag before retrying. Never republish the same version. The publisher does not install the plugin into Homebridge.
 
 ## Donation links
 
@@ -62,4 +64,5 @@ The older [beta publisher](scripts/publish-beta.sh) and [SSH wrapper](scripts/up
 - For early acknowledgement, verify a long-running success and late failure without duplicate commands.
 - Confirm shutdown/restart and room/scene/automation assignments.
 - Inspect the warning in Homebridge's Release Notes and Changelog tabs.
+
 

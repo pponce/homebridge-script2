@@ -30,10 +30,10 @@ script2_setup_release_tools "$script2_project_root"
 git fetch origin "$script2_branch"
 script2_source="$(git rev-parse HEAD)"
 if [ "$script2_source" != "$(git rev-parse "origin/$script2_branch")" ]; then echo 'STOP: local branch must match its remote commit.'; false; fi
-node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===22&&b>=13)||a===24))throw Error("Use Node 22.13+ within Node 22, or Node 24.");'
+node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===22&&b>=13)||a===24||a===26))throw Error("Use Node 22.13+ within Node 22, Node 24, or Node 26.");'
 script2_gh_user="$(gh api user --jq .login 2>/dev/null || true)"
 if [ "$script2_gh_user" != 'pponce' ]; then
-  echo 'GitHub API login is needed to create the official release.'
+  echo 'GitHub API login is needed to verify and download the official release.'
   echo 'Open the displayed URL in your browser, enter the displayed code, and authenticate as pponce.'
   script2_interactive gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key
 fi
@@ -46,23 +46,23 @@ if [ "$script2_npm_user" != 'klidec' ]; then
 fi
 script2_npm_user="$(npm whoami --registry="$script2_registry")"
 if [ "$script2_npm_user" != 'klidec' ]; then echo 'STOP: npm account must be klidec.'; false; fi
-mkdir -p "$script2_project_root/release-work/1.0.10"
-script2_work="$(mktemp -d "$script2_project_root/release-work/1.0.10/build-XXXXXX")"
+mkdir -p "$script2_project_root/release-work/1.0.11"
+script2_work="$(mktemp -d "$script2_project_root/release-work/1.0.11/build-XXXXXX")"
 echo "Source commit: $script2_source"
 echo "Accounts verified: GitHub $script2_gh_user; npm $script2_npm_user"
 echo "Release work directory: $script2_work"
 git archive "$script2_source" | tar -x -C "$script2_work"
-git ls-remote --tags origin > "$script2_work/remote-tags.txt"
+git fetch origin "refs/tags/v1.0.11:refs/tags/v1.0.11"
+if [ "$(git rev-parse 'v1.0.11^{commit}')" != "$script2_source" ]; then echo 'STOP: release tag does not match the source commit.'; false; fi
 cd "$script2_work"
-node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.10"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.10 stable metadata.");'
+node -e 'const p=require("./package.json");if(p.name!=="homebridge-script2"||p.version!=="1.0.11"||p.publishConfig?.tag!=="latest")throw Error("Expected Script2 1.0.11 stable metadata.");'
 script2_version="$(node -p 'require("./package.json").version')"
 script2_tag="v$script2_version"
 script2_notes="releases/$script2_tag.md"
 test -s "$script2_notes"
 node -e 'const fs=require("fs"),p=require("./package.json"),lock=require("./package-lock.json");if(lock.version!==p.version||lock.packages[""].version!==p.version)throw Error("Package and lockfile versions differ.");if(!fs.readFileSync("CHANGELOG.md","utf8").includes(`## ${p.version} —`))throw Error("Versioned changelog entry is missing.");if(!fs.readFileSync(`releases/v${p.version}.md`,"utf8").startsWith(`# Script2 ${p.version}\n`))throw Error("Release notes version does not match.");'
-node -e 'const fs=require("fs"),p=require("./package.json");if(fs.readFileSync("remote-tags.txt","utf8").split("\n").some(l=>l.split(/\s+/)[1]===`refs/tags/v${p.version}`))throw Error("Tag already exists; it will not be moved.");'
-gh api "repos/$script2_repo/releases?per_page=100" --paginate --jq '.[].tag_name' > github-releases.txt
-node -e 'const fs=require("fs"),p=require("./package.json");if(fs.readFileSync("github-releases.txt","utf8").split("\n").includes(`v${p.version}`))throw Error("GitHub release already exists.");'
+gh api "repos/$script2_repo/releases/tags/$script2_tag" > github-release.json
+node -e 'const fs=require("fs"),p=require("./package.json"),r=require("./github-release.json"),notes=fs.readFileSync(`releases/v${p.version}.md`,"utf8");if(r.draft||r.prerelease||r.tag_name!==`v${p.version}`||r.target_commitish!==process.argv[1]||r.body.trim()!==notes.trim())throw Error("GitHub release must match the checked source commit and notes.");' "$script2_source"
 npm view homebridge-script2 versions --json --prefer-online --registry="$script2_registry" > published-versions.json
 node -e 'const p=require("./package.json"),v=require("./published-versions.json");if(!Array.isArray(v)||v.includes(p.version))throw Error("Version already published or unexpected registry response. Do not republish an existing version.");'
 npm view homebridge-script2 dist-tags.latest --registry="$script2_registry" > stable-before.txt
@@ -73,9 +73,9 @@ npm run check
 npm test
 npm run test:installed
 npm run check:package
-npm pack --ignore-scripts --json > packed.json
-script2_archive="$(node -p 'require("./packed.json")[0].filename')"
-test -s "$script2_archive"
+script2_archive="homebridge-script2-$script2_version.tgz"
+gh release download "$script2_tag" --repo "$script2_repo" --pattern "$script2_archive" --dir "$script2_work"
+node scripts/check-release-archive.cjs github-release.json "$script2_archive" "$script2_source"
 # Install the exact archive into a clean directory, then run packaged watcher/UI tests there.
 mkdir smoke
 npm install --prefix smoke --ignore-scripts --package-lock=false --registry="$script2_registry" "$script2_work/$script2_archive"
@@ -86,17 +86,7 @@ echo 'If npm displays an authentication URL, open it in your local browser and c
 echo 'Keep this SSH session running; npm will wait and resume after approval.'
 script2_interactive npm publish "./$script2_archive" --ignore-scripts --access public --tag latest --auth-type=web --browser=false --registry="$script2_registry"
 echo "Published homebridge-script2@$script2_version as $script2_npm_user under latest."
-echo '===== CREATE GITHUB RELEASE ====='
-if gh release create "$script2_tag" "$script2_archive" assets/homebridge-script2-icon.png assets/homebridge-script2-icon-512.png --repo "$script2_repo" --target "$script2_source" --title "Script2 $script2_version" --notes-file "$script2_notes" --latest=true; then
-  echo "GitHub release: https://github.com/$script2_repo/releases/tag/$script2_tag"
-else
-  echo 'NPM SUCCEEDED; GITHUB RELEASE DID NOT FINISH. Inspect for a partial release. If absent, retry only:'
-  printf 'gh release create %q %q %q %q --repo %q --target %q --title %q --notes-file %q --latest=true\n' "$script2_tag" "$script2_work/$script2_archive" "$script2_work/assets/homebridge-script2-icon.png" "$script2_work/assets/homebridge-script2-icon-512.png" "$script2_repo" "$script2_source" "Script2 $script2_version" "$script2_work/$script2_notes"
-  echo 'Do not publish the same npm version again.'
-  false
-fi
-gh api "repos/$script2_repo/releases/tags/$script2_tag" > github-release.json
-node -e 'const fs=require("fs"),p=require("./package.json"),r=require("./github-release.json"),notes=fs.readFileSync(`releases/v${p.version}.md`,"utf8");if(r.draft||r.prerelease||r.tag_name!==`v${p.version}`||r.body.trim()!==notes.trim())throw Error("GitHub release or release notes do not match the stable package.");'
+echo "GitHub release: https://github.com/$script2_repo/releases/tag/$script2_tag"
 script2_latest=''
 for script2_attempt in {1..12}; do
   script2_latest="$(npm view homebridge-script2 dist-tags.latest --prefer-online --registry="$script2_registry" 2>/dev/null || true)"
@@ -113,4 +103,5 @@ fi
 echo "Stable release is ready: homebridge-script2@$script2_version (latest)."
 echo "GitHub: https://github.com/$script2_repo/releases/tag/$script2_tag"
 echo 'Install/update Script2 in Homebridge UI, then restart its instance or child bridge.'
+
 

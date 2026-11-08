@@ -1,6 +1,6 @@
 {
   "name": "homebridge-script2",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "license": "MIT",
   "description": "HomeKit script switches with file or command state, shared reads, serialized actions and optional early acknowledgement",
   "keywords": [
@@ -18,7 +18,7 @@
     "url": "git+https://github.com/pponce/homebridge-script2.git"
   },
   "engines": {
-    "node": "^22.13.0 || ^24.0.0",
+    "node": "^22.13.0 || ^24.0.0 || ^26.0.0",
     "homebridge": "^1.8.0 || ^2.0.0"
   },
   "scripts": {
@@ -73,4 +73,5 @@
     "ajv": "8.17.1"
   }
 }
+
 

@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [22, 24]
+        node: [22, 24, 26]
         homebridge: ['^1.8.0', '^2.0.0']
     steps:
       - uses: actions/checkout@v4
@@ -50,3 +50,55 @@ jobs:
       - run: npm install --prefix "$RUNNER_TEMP/script2-browser" playwright@1.56.1
       - run: node "$RUNNER_TEMP/script2-browser/node_modules/playwright/cli.js" install --with-deps chromium
       - run: SCRIPT2_BROWSER_MODULES="$RUNNER_TEMP/script2-browser/node_modules" npm run test:ui
+  release:
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/master' && startsWith(github.event.head_commit.message, 'release: ')
+    needs: [package, browser]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: script2-github-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - name: Publish checked GitHub release
+        env:
+          GH_TOKEN: '${{ github.token }}'
+          RELEASE_COMMIT: '${{ github.sha }}'
+          RELEASE_MESSAGE: '${{ github.event.head_commit.message }}'
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          tag="v$version"
+          node - <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const p = require('./package.json');
+          const lock = require('./package-lock.json');
+          assert.match(p.version, /^\d+\.\d+\.\d+$/);
+          assert.ok(process.env.RELEASE_MESSAGE.startsWith(`release: ${p.version} - `));
+          assert.equal(lock.version, p.version);
+          assert.equal(lock.packages[''].version, p.version);
+          assert.equal(lock.packages[''].engines.node, p.engines.node);
+          assert.ok(fs.readFileSync(`releases/v${p.version}.md`, 'utf8').startsWith(`# Script2 ${p.version}\n`));
+          NODE
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/master" --jq .sha)" = "$RELEASE_COMMIT"
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --paginate --jq '.[].tag_name' > "$RUNNER_TEMP/releases.txt"
+          if grep -Fxq "$tag" "$RUNNER_TEMP/releases.txt"; then
+            echo "Release $tag already exists; leaving it unchanged."
+          else
+            git ls-remote --tags origin "refs/tags/$tag" > "$RUNNER_TEMP/release-tags.txt"
+            if test -s "$RUNNER_TEMP/release-tags.txt"; then
+              echo "Tag $tag already exists without a release. Inspect it before retrying."
+              exit 1
+            fi
+            npm pack --ignore-scripts --json > "$RUNNER_TEMP/packed.json"
+            archive="$(node -p 'require(process.env.RUNNER_TEMP + "/packed.json")[0].filename')"
+            gh release create "$tag" "$archive" assets/homebridge-script2-icon.png assets/homebridge-script2-icon-512.png \
+              --repo "$GITHUB_REPOSITORY" --target "$RELEASE_COMMIT" --title "Script2 $version" \
+              --notes-file "releases/$tag.md" --latest
+          fi
+

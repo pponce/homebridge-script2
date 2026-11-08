@@ -68,7 +68,7 @@ See [user-provided scripts and examples](userProvidedScripts/) for integrations 
 4. For a new setup, open Settings and add an **On/Off switch** or a **Stateless switch**. Enter your commands; On/Off switches also need a state command or state file. For an existing valid setup, keep your current entries.
 5. Review Advanced settings if needed, use Homebridge Save, then restart the instance or child bridge running Script2. Opening or saving settings never runs commands.
 
-Requires Node **22.13+ within Node 22, or Node 24**, and Homebridge **1.8+ within v1, or v2**. Commands run as the Homebridge service user and must not require a terminal or prompts.
+Requires Node **22.13+ within Node 22, Node 24, or Node 26**, and Homebridge **1.8+ within v1, or v2**. Commands run as the Homebridge service user and must not require a terminal or prompts.
 
 Make scripts executable and use absolute paths accessible to the Homebridge service user. If a command works in your terminal but fails in Homebridge, start with the [FAQ](#troubleshooting-faq).
 
@@ -431,4 +431,5 @@ sudo -u homebridge /home/homebridge/scripts/light_off.sh
 ---
 
 Originally based on [homebridge-script](https://github.com/xxcombat/homebridge-script).
+
 

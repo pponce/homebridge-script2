@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.11 — 2026-11-08
+
+**Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
+
+### ⚠️ Upgrading from a version before 1.0.0
+
+**Only these older versions require migration. Back up your Homebridge config.json before updating, then follow the [migration guide](https://github.com/pponce/homebridge-script2/blob/master/MIGRATION.md).** Legacy Script2 accessory mode and old platform configuration formats are no longer supported.
+
+### Node.js 26 support
+
+- Add Node.js 26 to the supported engine range, resolving the compatibility warning in [#129](https://github.com/pponce/homebridge-script2/issues/129).
+- Extend CI to Node.js 22, 24, and 26 with Homebridge 1 and 2.
+- Accept Node.js 26 in the stable npm publisher and use the archive from the checked GitHub release.
+
+No plugin runtime or configuration changes are required.
+
+[Full 1.0.11 release notes](releases/v1.0.11.md)
+
 ## 1.0.10 — 2026-11-02
 
 **Users on version 1.0.x can update normally. No configuration changes or migration are required. This also applies to 1.0.0-beta.1.**
@@ -219,4 +237,5 @@ Select **1.0.3** / **latest** in Homebridge UI and restart the instance or child
 
 - Added optional early HomeKit acknowledgement for long-running commands, serialized and coalesced SET requests, deferred state reads, and custom UI saving fixes.
 - See [published release notes](https://github.com/pponce/homebridge-script2/releases/tag/v0.4.6) for the original release history.
+
 
